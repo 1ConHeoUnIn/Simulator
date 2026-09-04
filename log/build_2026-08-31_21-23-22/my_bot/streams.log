@@ -1,0 +1,29 @@
+[0.698s] Invoking command in '/home/heo/robot_ws/build/my_bot': PYTHONPATH=/home/heo/robot_ws/build/my_bot/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/heo/robot_ws/build/my_bot/build --no-deps symlink_data
+[0.892s] running develop
+[1.008s] running egg_info
+[1.008s] creating my_bot.egg-info
+[1.008s] writing my_bot.egg-info/PKG-INFO
+[1.008s] writing dependency_links to my_bot.egg-info/dependency_links.txt
+[1.008s] writing entry points to my_bot.egg-info/entry_points.txt
+[1.009s] writing requirements to my_bot.egg-info/requires.txt
+[1.009s] writing top-level names to my_bot.egg-info/top_level.txt
+[1.009s] writing manifest file 'my_bot.egg-info/SOURCES.txt'
+[1.009s] reading manifest file 'my_bot.egg-info/SOURCES.txt'
+[1.010s] writing manifest file 'my_bot.egg-info/SOURCES.txt'
+[1.011s] running build_ext
+[1.011s] Creating /home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages/my-bot.egg-link (link to .)
+[1.012s] 
+[1.012s] Installed /home/heo/robot_ws/build/my_bot
+[1.012s] running symlink_data
+[1.012s] creating /home/heo/robot_ws/install/my_bot/share/ament_index
+[1.012s] creating /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index
+[1.013s] creating /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index/packages
+[1.013s] symbolically linking /home/heo/robot_ws/build/my_bot/resource/my_bot -> /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index/packages
+[1.013s] symbolically linking /home/heo/robot_ws/build/my_bot/package.xml -> /home/heo/robot_ws/install/my_bot/share/my_bot
+[1.013s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.013s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/rsp.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.013s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.013s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/robot_core.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.014s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/inertial_macros.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.014s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/robot.urdf.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.047s] Invoked command in '/home/heo/robot_ws/build/my_bot' returned '0': PYTHONPATH=/home/heo/robot_ws/build/my_bot/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/heo/robot_ws/build/my_bot/build --no-deps symlink_data
