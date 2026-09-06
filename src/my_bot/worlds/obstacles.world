@@ -1,0 +1,151 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="default">
+
+    <!-- Ánh sáng và mặt đất -->
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- ====================================================
+         1. NHÀ KHO Ở GÓC DƯỚI - PHẢI (Tâm X = 6m, Y = -6m, cỡ 5m x 5m)
+         Cửa mở rộng 2.5m ở mặt phía BẮC (hướng ra sân giữa)
+         ==================================================== -->
+    <!-- Tường đáy (Nam) -->
+    <model name="barn_south">
+      <pose>6.0 -8.5 1.25 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>5.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>5.0 0.2 2.5</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Tường cạnh phải (Đông) -->
+    <model name="barn_east">
+      <pose>8.5 -6.0 1.25 0 0 1.5708</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>5.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>5.0 0.2 2.5</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Tường cạnh trái (Tây) -->
+    <model name="barn_west">
+      <pose>3.5 -6.0 1.25 0 0 1.5708</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>5.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>5.0 0.2 2.5</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Tường trước (Bắc) - Cánh trái cổng -->
+    <model name="barn_north_left">
+      <pose>4.125 -3.5 1.25 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.25 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.25 0.2 2.5</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Tường trước (Bắc) - Cánh phải cổng -->
+    <model name="barn_north_right">
+      <pose>7.875 -3.5 1.25 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>1.25 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>1.25 0.2 2.5</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- ====================================================
+         2. PLOT ĐẤT TRỒNG CÂY Ở GÓC TRÊN - TRÁI (Tâm X = -6m, Y = 6m, cỡ 7m x 7m)
+         Cổng mở rộng 2.5m ở mặt phía NAM (hướng quay về nhà kho)
+         ==================================================== -->
+    <!-- Rào đỉnh (Bắc) -->
+    <model name="garden_north">
+      <pose>-6.0 9.5 0.4 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7.0 0.15 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7.0 0.15 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Rào cạnh trái (Tây) -->
+    <model name="garden_west">
+      <pose>-9.5 6.0 0.4 0 0 1.5708</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7.0 0.15 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7.0 0.15 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Rào cạnh phải (Đông) -->
+    <model name="garden_east">
+      <pose>-2.5 6.0 0.4 0 0 1.5708</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>7.0 0.15 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>7.0 0.15 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Cổng rào vườn (Nam) - Cánh trái -->
+    <model name="garden_gate_left">
+      <pose>-8.375 2.5 0.4 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2.25 0.15 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2.25 0.15 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- Cổng rào vườn (Nam) - Cánh phải -->
+    <model name="garden_gate_right">
+      <pose>-3.625 2.5 0.4 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2.25 0.15 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2.25 0.15 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
+      </link>
+    </model>
+
+    <!-- ====================================================
+         3. LUỐNG CÂY TRONG VƯỜN (X = -7.5m và X = -4.5m)
+         ==================================================== -->
+    <model name="crop_row_left">
+      <pose>-7.5 6.0 0.4 0 0 1.5708</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>4.5 0.4 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>4.5 0.4 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual>
+      </link>
+    </model>
+
+    <model name="crop_row_right">
+      <pose>-4.5 6.0 0.4 0 0 1.5708</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="c"><geometry><box><size>4.5 0.4 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>4.5 0.4 0.8</size></box></geometry>
+        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

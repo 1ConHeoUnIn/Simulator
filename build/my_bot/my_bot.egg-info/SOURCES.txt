@@ -1,7 +1,9 @@
 package.xml
 setup.cfg
 setup.py
+config/mapper_params_online_async.yaml
 launch/rsp.launch.py
+launch/sim.launch.py
 my_bot/__init__.py
 my_bot.egg-info/PKG-INFO
 my_bot.egg-info/SOURCES.txt
@@ -11,6 +13,10 @@ my_bot.egg-info/requires.txt
 my_bot.egg-info/top_level.txt
 my_bot.egg-info/zip-safe
 resource/my_bot
+urdf/gazebo_control.xacro
+urdf/imu.xacro
 urdf/inertial_macros.xacro
+urdf/lidar.xacro
 urdf/robot.urdf.xacro
 urdf/robot_core.xacro
+worlds/obstacles.world

@@ -1,0 +1,30 @@
+running develop
+running egg_info
+creating my_bot.egg-info
+writing my_bot.egg-info/PKG-INFO
+writing dependency_links to my_bot.egg-info/dependency_links.txt
+writing entry points to my_bot.egg-info/entry_points.txt
+writing requirements to my_bot.egg-info/requires.txt
+writing top-level names to my_bot.egg-info/top_level.txt
+writing manifest file 'my_bot.egg-info/SOURCES.txt'
+reading manifest file 'my_bot.egg-info/SOURCES.txt'
+writing manifest file 'my_bot.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages/my-bot.egg-link (link to .)
+
+Installed /home/heo/robot_ws/build/my_bot
+running symlink_data
+creating /home/heo/robot_ws/install/my_bot/share/ament_index
+creating /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index
+creating /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index/packages
+symbolically linking /home/heo/robot_ws/build/my_bot/resource/my_bot -> /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index/packages
+symbolically linking /home/heo/robot_ws/build/my_bot/package.xml -> /home/heo/robot_ws/install/my_bot/share/my_bot
+creating /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+symbolically linking /home/heo/robot_ws/build/my_bot/launch/rsp.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+symbolically linking /home/heo/robot_ws/build/my_bot/launch/sim.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+creating /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+symbolically linking /home/heo/robot_ws/build/my_bot/urdf/lidar.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+symbolically linking /home/heo/robot_ws/build/my_bot/urdf/robot_core.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+symbolically linking /home/heo/robot_ws/build/my_bot/urdf/gazebo_control.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+symbolically linking /home/heo/robot_ws/build/my_bot/urdf/inertial_macros.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+symbolically linking /home/heo/robot_ws/build/my_bot/urdf/robot.urdf.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf

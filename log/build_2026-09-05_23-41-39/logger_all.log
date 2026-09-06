@@ -1,0 +1,132 @@
+[0.081s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build', '--symlink-install']
+[0.081s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=True, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=16, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7188c5960760>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7188c5960250>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7188c5960250>>)
+[0.242s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.242s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.242s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.242s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.242s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.242s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.242s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/heo/robot_ws'
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.242s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ignore', 'ignore_ament_install']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore_ament_install'
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_pkg']
+[0.251s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_pkg'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_meta']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_meta'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ros']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ros'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['cmake', 'python']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'cmake'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['python_setup_py']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python_setup_py'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extensions ['ignore', 'ignore_ament_install']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extension 'ignore'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extension 'ignore_ament_install'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extensions ['colcon_pkg']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extension 'colcon_pkg'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extensions ['colcon_meta']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extension 'colcon_meta'
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extensions ['ros']
+[0.252s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bot) by extension 'ros'
+[0.255s] DEBUG:colcon.colcon_core.package_identification:Package 'src/my_bot' with type 'ros.ament_python' and name 'my_bot'
+[0.255s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.255s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.255s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.255s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.255s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.281s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.281s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.283s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 331 installed packages in /opt/ros/humble
+[0.285s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.318s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'cmake_args' from command line to 'None'
+[0.318s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'cmake_target' from command line to 'None'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'cmake_clean_cache' from command line to 'False'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'cmake_clean_first' from command line to 'False'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'cmake_force_configure' from command line to 'False'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'ament_cmake_args' from command line to 'None'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'catkin_cmake_args' from command line to 'None'
+[0.319s] Level 5:colcon.colcon_core.verb:set package 'my_bot' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.319s] DEBUG:colcon.colcon_core.verb:Building package 'my_bot' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/heo/robot_ws/build/my_bot', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/heo/robot_ws/install/my_bot', 'merge_install': False, 'path': '/home/heo/robot_ws/src/my_bot', 'symlink_install': True, 'test_result_base': None}
+[0.319s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.320s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.320s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/heo/robot_ws/src/my_bot' with build type 'ament_python'
+[0.320s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bot', 'ament_prefix_path')
+[0.322s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.322s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/heo/robot_ws/install/my_bot/share/my_bot/hook/ament_prefix_path.ps1'
+[0.323s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/heo/robot_ws/install/my_bot/share/my_bot/hook/ament_prefix_path.dsv'
+[0.323s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/heo/robot_ws/install/my_bot/share/my_bot/hook/ament_prefix_path.sh'
+[0.323s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.324s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.556s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/heo/robot_ws/src/my_bot'
+[0.557s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.557s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.926s] DEBUG:colcon.colcon_core.task.python.build:Available setuptools commands: bdist_wheel, init_catalog, setopt, compile_catalog, sdist, build_ext, register, test, bdist, check, update_catalog, bdist_dumb, bdist_egg, upload, install_data, install_headers, rotate, egg_info, install, bdist_rpm, develop, dist_info, install_egg_info, upload_docs, alias, install_lib, clean, install_scripts, build_clib, symlink_data, build, easy_install, extract_messages, build_scripts, build_py, saveopts
+[1.170s] DEBUG:colcon.colcon_core.task.python.build:Available setuptools 'develop' options: --verbose, --find-links, --always-unzip, --prefix, --help, --always-copy, --index-url, --uninstall, --editable, --no-user-cfg, --build-directory, --script-dir, --local-snapshots-ok, --upgrade, --no-deps, --site-dirs, --multi-version, --version, --exclude-scripts, --dry-run, --zip-ok, --no-find-links, --install-dir, --quiet, --optimize, --allow-hosts, --record, --egg-path, --user
+[1.178s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/heo/robot_ws/build/my_bot': PYTHONPATH=/home/heo/robot_ws/build/my_bot/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/heo/robot_ws/build/my_bot/build --no-deps symlink_data
+[1.566s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bot', 'pythonpath_develop')
+[1.566s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/heo/robot_ws/build/my_bot/share/my_bot/hook/pythonpath_develop.ps1'
+[1.567s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/heo/robot_ws/build/my_bot' returned '0': PYTHONPATH=/home/heo/robot_ws/build/my_bot/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/heo/robot_ws/build/my_bot/build --no-deps symlink_data
+[1.567s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/heo/robot_ws/build/my_bot/share/my_bot/hook/pythonpath_develop.dsv'
+[1.568s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/heo/robot_ws/build/my_bot/share/my_bot/hook/pythonpath_develop.sh'
+[1.574s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot' for CMake module files
+[1.574s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot' for CMake config files
+[1.575s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot/lib'
+[1.575s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot/bin'
+[1.575s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot/lib/pkgconfig/my_bot.pc'
+[1.575s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages'
+[1.575s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bot', 'pythonpath')
+[1.575s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/heo/robot_ws/install/my_bot/share/my_bot/hook/pythonpath.ps1'
+[1.575s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/heo/robot_ws/install/my_bot/share/my_bot/hook/pythonpath.dsv'
+[1.576s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/heo/robot_ws/install/my_bot/share/my_bot/hook/pythonpath.sh'
+[1.576s] Level 1:colcon.colcon_core.environment:checking '/home/heo/robot_ws/install/my_bot/bin'
+[1.576s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(my_bot)
+[1.576s] INFO:colcon.colcon_core.shell:Creating package script '/home/heo/robot_ws/install/my_bot/share/my_bot/package.ps1'
+[1.577s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/heo/robot_ws/install/my_bot/share/my_bot/package.dsv'
+[1.578s] INFO:colcon.colcon_core.shell:Creating package script '/home/heo/robot_ws/install/my_bot/share/my_bot/package.sh'
+[1.579s] INFO:colcon.colcon_core.shell:Creating package script '/home/heo/robot_ws/install/my_bot/share/my_bot/package.bash'
+[1.580s] INFO:colcon.colcon_core.shell:Creating package script '/home/heo/robot_ws/install/my_bot/share/my_bot/package.zsh'
+[1.581s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/heo/robot_ws/install/my_bot/share/colcon-core/packages/my_bot)
+[1.581s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[1.581s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[1.581s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[1.581s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[1.590s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[1.591s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[1.591s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[1.612s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[1.612s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/heo/robot_ws/install/local_setup.ps1'
+[1.614s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/heo/robot_ws/install/_local_setup_util_ps1.py'
+[1.617s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/heo/robot_ws/install/setup.ps1'
+[1.619s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/heo/robot_ws/install/local_setup.sh'
+[1.620s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/heo/robot_ws/install/_local_setup_util_sh.py'
+[1.621s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/heo/robot_ws/install/setup.sh'
+[1.623s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/heo/robot_ws/install/local_setup.bash'
+[1.624s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/heo/robot_ws/install/setup.bash'
+[1.626s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/heo/robot_ws/install/local_setup.zsh'
+[1.627s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/heo/robot_ws/install/setup.zsh'

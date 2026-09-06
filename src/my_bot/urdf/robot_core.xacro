@@ -128,7 +128,7 @@
 
     <!-- ==================== FRONT LEFT SWIVEL CASTER ==================== -->
     <!-- Khop xoay co banh quanh truc Z -->
-    <joint name="fl_caster_swivel_joint" type="continuous">
+    <joint name="fl_caster_swivel_joint" type="fixed">
         <parent link="chassis"/>
         <child link="fl_caster_swivel"/>
         <origin xyz="0.45 0.18 0.1" rpy="0 0 0"/>
@@ -155,7 +155,7 @@
     </link>
 
     <!-- Khop quay banh xe lan quanh truc Y -->
-    <joint name="fl_caster_wheel_joint" type="continuous">
+    <joint name="fl_caster_wheel_joint" type="fixed">
         <parent link="fl_caster_swivel"/>
         <child link="fl_caster_wheel"/>
         <origin xyz="-0.03 0 -0.05" rpy="-${pi/2} 0 0"/>
@@ -192,7 +192,7 @@
 
     <!-- ==================== FRONT RIGHT SWIVEL CASTER ==================== -->
     <!-- Khop xoay co banh quanh truc Z -->
-    <joint name="fr_caster_swivel_joint" type="continuous">
+    <joint name="fr_caster_swivel_joint" type="fixed">
         <parent link="chassis"/>
         <child link="fr_caster_swivel"/>
         <origin xyz="0.45 -0.18 0.1" rpy="0 0 0"/>
@@ -219,7 +219,7 @@
     </link>
 
     <!-- Khop quay banh xe lan quanh truc Y -->
-    <joint name="fr_caster_wheel_joint" type="continuous">
+    <joint name="fr_caster_wheel_joint" type="fixed">
         <parent link="fr_caster_swivel"/>
         <child link="fr_caster_wheel"/>
         <origin xyz="-0.03 0 -0.05" rpy="-${pi/2} 0 0"/>
