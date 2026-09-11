@@ -5,6 +5,7 @@ source install/setup.bash
 ros2 launch my_bot sim.launch.py
 "
 
+control
 "
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 "
