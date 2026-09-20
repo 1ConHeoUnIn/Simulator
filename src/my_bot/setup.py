@@ -27,6 +27,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'row_detector = my_bot.row_detector:main',
         ],
     },
 )
