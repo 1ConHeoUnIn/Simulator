@@ -24,7 +24,7 @@ def world_to_pixel(x, y):
     return px, py
 
 # 2. Vẽ 5 luống cây và các gốc cây theo đúng toạ độ trong obstacles.world
-row_x_positions = [-9.0, -6.8, -4.6, -2.4, -0.2]
+row_x_positions = [-4.4, -2.2, 0.0, 2.2, 4.4]
 bed_width = 0.8
 bed_length = 11.0
 tree_y_positions = [1.0, 2.2, 3.4, 4.6, 5.8, 7.0, 8.2, 9.4]

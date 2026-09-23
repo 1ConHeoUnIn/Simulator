@@ -1,3 +1,4 @@
 [console_scripts]
+farm_manager = my_bot.farm_manager:main
 row_detector = my_bot.row_detector:main
 

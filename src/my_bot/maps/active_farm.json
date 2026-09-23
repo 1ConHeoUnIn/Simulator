@@ -1,0 +1,11 @@
+{
+  "status": "READY",
+  "farmName": "Khu_A",
+  "numBeds": 5,
+  "bedWidth": 0.8,
+  "aisleWidth": 1.4,
+  "firstBedX": -4.4,
+  "bedStartY": 0,
+  "bedLength": 10,
+  "corridorOffset": 1.8
+}

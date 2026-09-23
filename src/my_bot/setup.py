@@ -28,6 +28,7 @@ setup(
     entry_points={
         'console_scripts': [
             'row_detector = my_bot.row_detector:main',
+            'farm_manager = my_bot.farm_manager:main',
         ],
     },
 )

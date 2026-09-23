@@ -3,6 +3,7 @@ setup.cfg
 setup.py
 config/mapper_params_online_async.yaml
 config/nav2_params.yaml
+launch/bringup.launch.py
 launch/navigation.launch.py
 launch/rsp.launch.py
 launch/sim.launch.py
@@ -10,6 +11,7 @@ maps/generate_map.py
 maps/my_farm_map.pgm
 maps/my_farm_map.yaml
 my_bot/__init__.py
+my_bot/farm_manager.py
 my_bot/row_detector.py
 my_bot.egg-info/PKG-INFO
 my_bot.egg-info/SOURCES.txt
