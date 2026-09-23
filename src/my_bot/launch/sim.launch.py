@@ -38,14 +38,14 @@ def generate_launch_description():
         launch_arguments={'world': world_path}.items()
     )
 
-    # 3. Node thả (spawn) robot vào thế giới ảo
+  # 3. Node thả (spawn) robot vào đầu vườn
     spawn_entity = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
         arguments=['-topic', 'robot_description',
                    '-entity', 'my_bot',
-                   '-x', '6.0',
-                   '-y', '-6.0',
+                   '-x', '0.0',
+                   '-y', '-2.5',
                    '-z', '0.1',
                    '-Y', '1.5708'],
         output='screen'

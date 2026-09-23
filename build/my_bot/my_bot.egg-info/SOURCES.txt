@@ -6,6 +6,7 @@ config/nav2_params.yaml
 launch/navigation.launch.py
 launch/rsp.launch.py
 launch/sim.launch.py
+maps/generate_map.py
 maps/my_farm_map.pgm
 maps/my_farm_map.yaml
 my_bot/__init__.py

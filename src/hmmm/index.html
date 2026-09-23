@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điều Khiển & Dẫn Đường Robot Nav2</title>
+
+    <!-- Các thư viện Web ROS -->
+    <script src="https://cdn.jsdelivr.net/npm/easeljs@1/lib/easeljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eventemitter2@6/lib/eventemitter2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ros2d@0/build/ros2d.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 15px;
+            background-color: #f4f6f8;
+            text-align: center;
+        }
+        #status {
+            font-weight: bold;
+            color: red;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        #map-box {
+            border: 2px solid #222;
+            background-color: #7f7f7f;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: inline-block;
+        }
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            min-width: 320px;
+            text-align: left;
+        }
+        .panel-section {
+            margin-bottom: 20px;
+        }
+        .btn-action {
+            width: 100%;
+            height: 42px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            color: white;
+            transition: 0.1s;
+        }
+        .btn-action:active {
+            transform: scale(0.97);
+        }
+        .btn-start { background-color: #28a745; }
+        .btn-clear { background-color: #6c757d; }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 75px 75px 75px;
+            grid-gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .btn-move {
+            height: 55px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .btn-stop { background-color: #dc3545; }
+        .info-box {
+            background-color: #eef2f7;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.4;
+        }
+        #waypoints-list {
+            max-height: 110px;
+            overflow-y: auto;
+            padding-left: 20px;
+            margin: 8px 0;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>TRẠM ĐIỀU KHIỂN & CHẤM LỘ TRÌNH ROBOT</h2>
+    <div id="status">Trạng thái: Đang kết nối ROS...</div>
+
+    <div class="main-container">
+        <!-- Khung bản đồ -->
+        <div>
+            <div id="map-box"></div>
+            <p style="font-size: 0.85rem; color: #555; margin-top: 6px;">
+                💡 <b>Hướng dẫn:</b> Click liên tiếp trên bản đồ để tạo chuỗi điểm (1, 2, 3...).
+            </p>
+        </div>
+
+        <!-- Bảng điều khiển -->
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3 style="margin-top: 0;">Lộ Trình Tự Hành</h3>
+                <div class="info-box">
+                    <div><b>Trạng thái lộ trình:</b> <span id="mission-status">Chờ tạo điểm</span></div>
+                    <ol id="waypoints-list"></ol>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn-action btn-start" onclick="sendWaypointsMission()">BẮT ĐẦU CHẠY LỘ TRÌNH</button>
+                    <button class="btn-action btn-clear" onclick="clearWaypoints()">XÓA LỘ TRÌNH</button>
+                    <button class="btn-action" style="background-color: #fd7e14;" onclick="saveSlamMap()">LƯU BẢN ĐỒ SLAM</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Lái Thủ Công</h3>
+                <div class="btn-grid">
+                    <div></div>
+                    <button class="btn-move" onclick="sendCmd(0.3, 0.0)">TIẾN</button>
+                    <div></div>
+
+                    <button class="btn-move" onclick="sendCmd(0.0, 0.8)">TRÁI</button>
+                    <button class="btn-move btn-stop" onclick="sendCmd(0.0, 0.0)">DỪNG</button>
+                    <button class="btn-move" onclick="sendCmd(0.0, -0.8)">PHẢI</button>
+
+                    <div></div>
+                    <button class="btn-move" onclick="sendCmd(-0.3, 0.0)">LÙI</button>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Kết nối ROSBridge
+        const ros = new ROSLIB.Ros({
+            url: 'ws://localhost:9090'
+        });
+
+        const statusText = document.getElementById('status');
+        const missionStatus = document.getElementById('mission-status');
+        const waypointsListEl = document.getElementById('waypoints-list');
+
+        ros.on('connection', () => {
+            statusText.innerText = 'Trạng thái: Đã kết nối ROS thành công (Port 9090)';
+            statusText.style.color = 'green';
+        });
+
+        ros.on('error', () => {
+            statusText.innerText = 'Trạng thái: Lỗi kết nối!';
+            statusText.style.color = 'red';
+        });
+
+        ros.on('close', () => {
+            statusText.innerText = 'Trạng thái: Mất kết nối tới ROS!';
+            statusText.style.color = 'red';
+        });
+
+        // 2. Lái xe thủ công qua /cmd_vel
+        const cmdVel = new ROSLIB.Topic({
+            ros: ros,
+            name: '/cmd_vel',
+            messageType: 'geometry_msgs/msg/Twist'
+        });
+
+        function sendCmd(linearX, angularZ) {
+            const twist = new ROSLIB.Message({
+                linear: { x: linearX, y: 0.0, z: 0.0 },
+                angular: { x: 0.0, y: 0.0, z: angularZ }
+            });
+            cmdVel.publish(twist);
+        }
+
+        // 3. Khởi tạo bản đồ ROS2D
+        const viewer = new ROS2D.Viewer({
+            divID: 'map-box',
+            width: 520,
+            height: 520
+        });
+
+        const gridClient = new ROS2D.OccupancyGridClient({
+            ros: ros,
+            rootObject: viewer.scene,
+            continuous: true
+        });
+
+        gridClient.on('change', () => {
+            viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+            viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+        });
+
+        // Layer hiển thị
+        const lidarContainer = new createjs.Container();
+        const waypointsContainer = new createjs.Container();
+        const robotMarker = new createjs.Container();
+
+        // Vẽ hình mũi tên robot
+        const robotShape = new createjs.Shape();
+        robotShape.graphics.beginFill("#007bff").moveTo(0.3, 0).lineTo(-0.2, -0.2).lineTo(-0.1, 0).lineTo(-0.2, 0.2).closePath();
+        robotMarker.addChild(robotShape);
+        robotMarker.visible = false;
+
+        viewer.scene.addChild(lidarContainer);
+        viewer.scene.addChild(waypointsContainer);
+        viewer.scene.addChild(robotMarker);
+
+        // 4. Lấy vị trí Robot trực tiếp từ Topic /amcl_pose (Không cần tf2_web_republisher)
+        const poseSub = new ROSLIB.Topic({
+            ros: ros,
+            name: '/amcl_pose',
+            messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped'
+        });
+
+        let currentRobotPose = null;
+        let robotYaw = 0.0;
+
+        poseSub.subscribe((msg) => {
+            const pos = msg.pose.pose.position;
+            const q = msg.pose.pose.orientation;
+
+            currentRobotPose = pos;
+            robotMarker.x = pos.x;
+            robotMarker.y = -pos.y;
+
+            // Tính góc Yaw từ Quaternion
+            const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+            const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+            robotYaw = Math.atan2(siny_cosp, cosy_cosp);
+
+            robotMarker.rotation = -robotYaw * (180 / Math.PI);
+            robotMarker.visible = true;
+        });
+
+        // 5. Hiển thị tia LiDAR (/scan)
+        const scanSub = new ROSLIB.Topic({
+            ros: ros,
+            name: '/scan',
+            messageType: 'sensor_msgs/msg/LaserScan',
+            throttle_rate: 100
+        });
+
+        const lidarGraphics = new createjs.Shape();
+        lidarContainer.addChild(lidarGraphics);
+
+        scanSub.subscribe((scan) => {
+            if (!robotMarker.visible || !currentRobotPose) return;
+
+            lidarGraphics.graphics.clear();
+            lidarGraphics.graphics.beginFill("rgba(255, 0, 0, 0.8)");
+
+            const rx = currentRobotPose.x;
+            const ry = -currentRobotPose.y;
+
+            for (let i = 0; i < scan.ranges.length; i += 6) {
+                const r = scan.ranges[i];
+                if (r >= scan.range_min && r <= scan.range_max) {
+                    const angle = robotYaw + scan.angle_min + (i * scan.angle_increment);
+                    const lx = rx + r * Math.cos(angle);
+                    const ly = ry - r * Math.sin(angle);
+                    lidarGraphics.graphics.drawCircle(lx, ly, 0.05);
+                }
+            }
+        });
+
+        // 6. Quản lý danh sách Waypoints
+        let waypoints = [];
+
+        viewer.scene.addEventListener('stagemousedown', (event) => {
+            const stagePos = viewer.scene.globalToLocal(event.stageX, event.stageY);
+            const targetX = stagePos.x;
+            const targetY = -stagePos.y;
+
+            waypoints.push({ x: targetX, y: targetY });
+            renderWaypoints();
+        });
+
+        function renderWaypoints() {
+            waypointsContainer.removeAllChildren();
+            waypointsListEl.innerHTML = '';
+            missionStatus.innerText = `${waypoints.length} điểm đã chọn`;
+
+            const pathLine = new createjs.Shape();
+            pathLine.graphics.setStrokeStyle(0.04).beginStroke("#28a745");
+
+            waypoints.forEach((pt, idx) => {
+                if (idx === 0) {
+                    pathLine.graphics.moveTo(pt.x, -pt.y);
+                } else {
+                    pathLine.graphics.lineTo(pt.x, -pt.y);
+                }
+
+                const circle = new createjs.Shape();
+                circle.graphics.beginFill("#ffc107").beginStroke("#333").setStrokeStyle(0.02).drawCircle(pt.x, -pt.y, 0.15);
+                waypointsContainer.addChild(circle);
+
+                const li = document.createElement('li');
+                li.innerText = `P${idx + 1}: (${pt.x.toFixed(2)}m, ${pt.y.toFixed(2)}m)`;
+                waypointsListEl.appendChild(li);
+            });
+
+            waypointsContainer.addChildAt(pathLine, 0);
+        }
+
+        function clearWaypoints() {
+            waypoints = [];
+            isMissionRunning = false;
+            renderWaypoints();
+            missionStatus.innerText = "Chờ tạo điểm";
+        }
+
+        // 7. Gửi tuần tự từng điểm cho Nav2 qua /goal_pose
+        const goalTopic = new ROSLIB.Topic({
+            ros: ros,
+            name: '/goal_pose',
+            messageType: 'geometry_msgs/msg/PoseStamped'
+        });
+
+        let currentWaypointIndex = 0;
+        let isMissionRunning = false;
+
+        function sendWaypointsMission() {
+            if (waypoints.length === 0) {
+                alert("Vui lòng click chọn ít nhất 1 điểm trên bản đồ trước!");
+                return;
+            }
+
+            isMissionRunning = true;
+            currentWaypointIndex = 0;
+            executeNextWaypoint();
+        }
+
+        function executeNextWaypoint() {
+            if (!isMissionRunning) return;
+
+            if (currentWaypointIndex >= waypoints.length) {
+                alert("Đã hoàn thành toàn bộ lộ trình!");
+                isMissionRunning = false;
+                clearWaypoints();
+                return;
+            }
+
+            const target = waypoints[currentWaypointIndex];
+            missionStatus.innerText = `Đang chạy điểm ${currentWaypointIndex + 1}/${waypoints.length}`;
+
+            const poseStamped = new ROSLIB.Message({
+                header: {
+                    frame_id: 'map',
+                    stamp: { sec: 0, nanosec: 0 }
+                },
+                pose: {
+                    position: { x: target.x, y: target.y, z: 0.0 },
+                    orientation: { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }
+                }
+            });
+
+            goalTopic.publish(poseStamped);
+        }
+
+        // Tự động kiểm tra khoảng cách: dưới 0.6m sẽ chuyển sang điểm kế tiếp
+        setInterval(() => {
+            if (!isMissionRunning || !currentRobotPose || currentWaypointIndex >= waypoints.length) return;
+
+            const target = waypoints[currentWaypointIndex];
+            const dx = currentRobotPose.x - target.x;
+            const dy = currentRobotPose.y - target.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 0.6) {
+                currentWaypointIndex++;
+                executeNextWaypoint();
+            }
+        }, 500);
+        
+        // 8. Service gọi slam_toolbox để lưu bản đồ trực tiếp từ Web
+        const saveMapClient = new ROSLIB.Service({
+            ros: ros,
+            name: '/slam_toolbox/save_map',
+            serviceType: 'slam_toolbox/srv/SaveMap'
+        });
+
+        function saveSlamMap() {
+            statusText.innerText = "Trạng thái: Đang gửi lệnh lưu bản đồ...";
+            statusText.style.color = "#fd7e14";
+
+            // Đường dẫn lưu file map trong workspace
+            const request = new ROSLIB.ServiceRequest({
+                name: {
+                    data: '/home/heo/robot_ws/src/my_bot/maps/my_farm_map'
+                }
+            });
+
+            saveMapClient.callService(request, (result) => {
+                alert("Đã lưu bản đồ thành công vào src/my_bot/maps/my_farm_map!");
+                statusText.innerText = "Trạng thái: Đã lưu bản đồ thành công!";
+                statusText.style.color = "green";
+            }, (error) => {
+                alert("Lỗi khi lưu bản đồ! Hãy kiểm tra xem slam_toolbox đã bật chưa.");
+                statusText.innerText = "Trạng thái: Lỗi khi lưu bản đồ!";
+                statusText.style.color = "red";
+                console.error(error);
+            });
+        }
+    </script>
+</body>
+</html>

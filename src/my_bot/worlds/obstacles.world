@@ -1,150 +1,119 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <world name="default">
-
     <!-- Ánh sáng và mặt đất -->
     <include><uri>model://sun</uri></include>
     <include><uri>model://ground_plane</uri></include>
 
     <!-- ====================================================
-         1. NHÀ KHO Ở GÓC DƯỚI - PHẢI (Tâm X = 6m, Y = -6m, cỡ 5m x 5m)
-         Cửa mở rộng 2.5m ở mặt phía BẮC (hướng ra sân giữa)
+         5 LUỐNG ĐẤT VÀ HÀNG CÂY (Khoảng cách tim luống 2.2m)
+         Mô đất: Rộng 0.8m, Dài 10m, Cao 0.1m (Lối đi lọt lòng 1.4m)
+         Cây: Trụ tròn cao 0.8m đặt trên đỉnh mô đất
          ==================================================== -->
-    <!-- Tường đáy (Nam) -->
-    <model name="barn_south">
-      <pose>6.0 -8.5 1.25 0 0 0</pose>
+
+    <!-- LUỐNG 1: X = -4.4m -->
+    <model name="bed_and_trees_1">
       <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>5.0 0.2 2.5</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>5.0 0.2 2.5</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      <link name="bed_1">
+        <pose>-4.4 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
       </link>
+      <link name="t_1_1"><pose>-4.4 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_2"><pose>-4.4 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_3"><pose>-4.4 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_4"><pose>-4.4 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_5"><pose>-4.4 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_6"><pose>-4.4 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_7"><pose>-4.4 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_8"><pose>-4.4 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
     </model>
 
-    <!-- Tường cạnh phải (Đông) -->
-    <model name="barn_east">
-      <pose>8.5 -6.0 1.25 0 0 1.5708</pose>
+    <!-- LUỐNG 2: X = -2.2m -->
+    <model name="bed_and_trees_2">
       <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>5.0 0.2 2.5</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>5.0 0.2 2.5</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      <link name="bed_2">
+        <pose>-2.2 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
       </link>
+      <link name="t_2_1"><pose>-2.2 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_2"><pose>-2.2 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_3"><pose>-2.2 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_4"><pose>-2.2 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_5"><pose>-2.2 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_6"><pose>-2.2 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_7"><pose>-2.2 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_8"><pose>-2.2 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
     </model>
 
-    <!-- Tường cạnh trái (Tây) -->
-    <model name="barn_west">
-      <pose>3.5 -6.0 1.25 0 0 1.5708</pose>
+    <!-- LUỐNG 3: X = 0.0m -->
+    <model name="bed_and_trees_3">
       <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>5.0 0.2 2.5</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>5.0 0.2 2.5</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      <link name="bed_3">
+        <pose>0.0 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
       </link>
+      <link name="t_3_1"><pose>0.0 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_2"><pose>0.0 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_3"><pose>0.0 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_4"><pose>0.0 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_5"><pose>0.0 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_6"><pose>0.0 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_7"><pose>0.0 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_8"><pose>0.0 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
     </model>
 
-    <!-- Tường trước (Bắc) - Cánh trái cổng -->
-    <model name="barn_north_left">
-      <pose>4.125 -3.5 1.25 0 0 0</pose>
+    <!-- LUỐNG 4: X = 2.2m -->
+    <model name="bed_and_trees_4">
       <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>1.25 0.2 2.5</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>1.25 0.2 2.5</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      <link name="bed_4">
+        <pose>2.2 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
       </link>
+      <link name="t_4_1"><pose>2.2 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_2"><pose>2.2 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_3"><pose>2.2 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_4"><pose>2.2 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_5"><pose>2.2 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_6"><pose>2.2 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_7"><pose>2.2 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_8"><pose>2.2 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
     </model>
 
-    <!-- Tường trước (Bắc) - Cánh phải cổng -->
-    <model name="barn_north_right">
-      <pose>7.875 -3.5 1.25 0 0 0</pose>
+    <!-- LUỐNG 5: X = 4.4m -->
+    <model name="bed_and_trees_5">
       <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>1.25 0.2 2.5</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>1.25 0.2 2.5</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material></visual>
+      <link name="bed_5">
+        <pose>4.4 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
       </link>
-    </model>
-
-    <!-- ====================================================
-         2. PLOT ĐẤT TRỒNG CÂY Ở GÓC TRÊN - TRÁI (Tâm X = -6m, Y = 6m, cỡ 7m x 7m)
-         Cổng mở rộng 2.5m ở mặt phía NAM (hướng quay về nhà kho)
-         ==================================================== -->
-    <!-- Rào đỉnh (Bắc) -->
-    <model name="garden_north">
-      <pose>-6.0 9.5 0.4 0 0 0</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>7.0 0.15 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>7.0 0.15 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
-      </link>
-    </model>
-
-    <!-- Rào cạnh trái (Tây) -->
-    <model name="garden_west">
-      <pose>-9.5 6.0 0.4 0 0 1.5708</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>7.0 0.15 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>7.0 0.15 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
-      </link>
-    </model>
-
-    <!-- Rào cạnh phải (Đông) -->
-    <model name="garden_east">
-      <pose>-2.5 6.0 0.4 0 0 1.5708</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>7.0 0.15 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>7.0 0.15 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
-      </link>
-    </model>
-
-    <!-- Cổng rào vườn (Nam) - Cánh trái -->
-    <model name="garden_gate_left">
-      <pose>-8.375 2.5 0.4 0 0 0</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>2.25 0.15 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>2.25 0.15 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
-      </link>
-    </model>
-
-    <!-- Cổng rào vườn (Nam) - Cánh phải -->
-    <model name="garden_gate_right">
-      <pose>-3.625 2.5 0.4 0 0 0</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>2.25 0.15 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>2.25 0.15 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Grey</name></script></material></visual>
-      </link>
-    </model>
-
-    <!-- ====================================================
-         3. LUỐNG CÂY TRONG VƯỜN (X = -7.5m và X = -4.5m)
-         ==================================================== -->
-    <model name="crop_row_left">
-      <pose>-7.5 6.0 0.4 0 0 1.5708</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>4.5 0.4 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>4.5 0.4 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual>
-      </link>
-    </model>
-
-    <model name="crop_row_right">
-      <pose>-4.5 6.0 0.4 0 0 1.5708</pose>
-      <static>true</static>
-      <link name="link">
-        <collision name="c"><geometry><box><size>4.5 0.4 0.8</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>4.5 0.4 0.8</size></box></geometry>
-        <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual>
-      </link>
+      <link name="t_5_1"><pose>4.4 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_2"><pose>4.4 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_3"><pose>4.4 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_4"><pose>4.4 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_5"><pose>4.4 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_6"><pose>4.4 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_7"><pose>4.4 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_8"><pose>4.4 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
     </model>
 
   </world>

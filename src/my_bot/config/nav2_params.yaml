@@ -6,8 +6,8 @@ amcl:
     use_sim_time: True
     set_initial_pose: true
     initial_pose:
-      x: 6.0
-      y: -6.0
+      x: 0.0
+      y: -2.5
       z: 0.0
       yaw: 1.5708
     alpha1: 0.2
