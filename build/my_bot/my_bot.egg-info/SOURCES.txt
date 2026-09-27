@@ -7,9 +7,14 @@ launch/bringup.launch.py
 launch/navigation.launch.py
 launch/rsp.launch.py
 launch/sim.launch.py
+launch/slam_continue.launch.py
+launch/slam_mapping.launch.py
+maps/active_farm.json
 maps/generate_map.py
+maps/my_farm.data
+maps/my_farm.posegraph
+maps/my_farm.yaml
 maps/my_farm_map.pgm
-maps/my_farm_map.yaml
 my_bot/__init__.py
 my_bot/farm_manager.py
 my_bot/row_detector.py

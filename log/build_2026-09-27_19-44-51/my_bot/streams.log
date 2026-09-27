@@ -1,0 +1,52 @@
+[0.929s] Invoking command in '/home/heo/robot_ws/build/my_bot': PYTHONPATH=/home/heo/robot_ws/build/my_bot/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/heo/robot_ws/build/my_bot/build --no-deps symlink_data
+[1.171s] running develop
+[1.315s] running egg_info
+[1.316s] creating my_bot.egg-info
+[1.316s] writing my_bot.egg-info/PKG-INFO
+[1.316s] writing dependency_links to my_bot.egg-info/dependency_links.txt
+[1.316s] writing entry points to my_bot.egg-info/entry_points.txt
+[1.316s] writing requirements to my_bot.egg-info/requires.txt
+[1.316s] writing top-level names to my_bot.egg-info/top_level.txt
+[1.317s] writing manifest file 'my_bot.egg-info/SOURCES.txt'
+[1.319s] reading manifest file 'my_bot.egg-info/SOURCES.txt'
+[1.319s] writing manifest file 'my_bot.egg-info/SOURCES.txt'
+[1.321s] running build_ext
+[1.321s] Creating /home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages/my-bot.egg-link (link to .)
+[1.321s] Installing farm_manager script to /home/heo/robot_ws/install/my_bot/lib/my_bot
+[1.322s] Installing row_detector script to /home/heo/robot_ws/install/my_bot/lib/my_bot
+[1.322s] 
+[1.322s] Installed /home/heo/robot_ws/build/my_bot
+[1.322s] running symlink_data
+[1.322s] creating /home/heo/robot_ws/install/my_bot/share/ament_index
+[1.322s] creating /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index
+[1.323s] creating /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index/packages
+[1.323s] symbolically linking /home/heo/robot_ws/build/my_bot/resource/my_bot -> /home/heo/robot_ws/install/my_bot/share/ament_index/resource_index/packages
+[1.323s] symbolically linking /home/heo/robot_ws/build/my_bot/package.xml -> /home/heo/robot_ws/install/my_bot/share/my_bot
+[1.323s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.323s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/slam_continue.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.323s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/bringup.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/navigation.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/rsp.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/slam_mapping.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/launch/sim.launch.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/launch
+[1.324s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/imu.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/lidar.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/camera.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.324s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/robot_core.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/gazebo_control.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/inertial_macros.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/urdf/robot.urdf.xacro -> /home/heo/robot_ws/install/my_bot/share/my_bot/urdf
+[1.325s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/worlds
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/worlds/obstacles.world -> /home/heo/robot_ws/install/my_bot/share/my_bot/worlds
+[1.325s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/config
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/config/mapper_params_online_async.yaml -> /home/heo/robot_ws/install/my_bot/share/my_bot/config
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/config/nav2_params.yaml -> /home/heo/robot_ws/install/my_bot/share/my_bot/config
+[1.325s] creating /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.325s] symbolically linking /home/heo/robot_ws/build/my_bot/maps/generate_map.py -> /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.326s] symbolically linking /home/heo/robot_ws/build/my_bot/maps/my_farm.yaml -> /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.326s] symbolically linking /home/heo/robot_ws/build/my_bot/maps/my_farm.posegraph -> /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.326s] symbolically linking /home/heo/robot_ws/build/my_bot/maps/my_farm_map.pgm -> /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.326s] symbolically linking /home/heo/robot_ws/build/my_bot/maps/active_farm.json -> /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.326s] symbolically linking /home/heo/robot_ws/build/my_bot/maps/my_farm.data -> /home/heo/robot_ws/install/my_bot/share/my_bot/maps
+[1.373s] Invoked command in '/home/heo/robot_ws/build/my_bot' returned '0': PYTHONPATH=/home/heo/robot_ws/build/my_bot/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/heo/robot_ws/install/my_bot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/heo/robot_ws/build/my_bot/build --no-deps symlink_data

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Vườn Thông Minh</title>
+    <title>Trạm Điều Khiển Lộ Trình Nông Nghiệp</title>
     <script src="https://cdn.jsdelivr.net/npm/easeljs@1/lib/easeljs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/eventemitter2@6/lib/eventemitter2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
@@ -12,101 +12,100 @@
         body { font-family: Arial, sans-serif; margin: 15px; background-color: #f4f6f8; text-align: center; }
         #status { font-weight: bold; color: red; margin-bottom: 12px; font-size: 1.05rem; }
         .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 15px; flex-wrap: wrap; }
-        #map-box { border: 2px solid #222; background-color: #7f7f7f; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: inline-block; }
+        #map-box { border: 2px solid #222; background-color: #7f7f7f; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: inline-block; cursor: crosshair; }
         .panel { background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; box-sizing: border-box; }
         .control-panel { width: 340px; }
         .config-panel { width: 320px; }
-        .panel h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 6px; font-size: 1.1rem; color: #333; }
+        
         .form-group { margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; }
-        .form-group label { font-size: 0.85rem; color: #444; max-width: 190px; }
+        .form-group label { font-size: 0.83rem; color: #333; max-width: 195px; font-weight: 500; }
         .form-group input { width: 85px; padding: 4px 6px; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
-        .btn-action { width: 100%; height: 38px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; margin-bottom: 8px; color: white; transition: 0.1s; }
+        
+        .btn-action { width: 100%; height: 38px; font-size: 13px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; margin-bottom: 8px; color: white; transition: 0.1s; }
         .btn-action:active { transform: scale(0.98); }
         .btn-start { background-color: #28a745; }
+        .btn-undo { background-color: #ffc107; color: #222 !important; }
         .btn-clear { background-color: #6c757d; }
+        .btn-estop { background-color: #dc3545; height: 46px; font-size: 15px; letter-spacing: 1px; box-shadow: 0 3px 6px rgba(220,53,69,0.4); }
         .btn-save-robot { background-color: #007bff; }
-        .btn-new-farm { background-color: #6c757d; font-size: 13px; height: 34px; }
-        .btn-io { background-color: #17a2b8; height: 32px; font-size: 13px; }
-        .btn-grid { display: grid; grid-template-columns: 75px 75px 75px; grid-gap: 8px; justify-content: center; margin-top: 10px; }
-        .btn-move { height: 48px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; background-color: #007bff; color: white; cursor: pointer; }
+        .btn-new-farm { background-color: #dc3545; font-size: 12px; height: 34px; }
+        
+        .btn-grid { display: grid; grid-template-columns: 75px 75px 75px; grid-gap: 8px; justify-content: center; margin-top: 8px; }
+        .btn-move { height: 44px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; background-color: #007bff; color: white; cursor: pointer; }
         .btn-stop { background-color: #dc3545; }
         .info-box { background-color: #eef2f7; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #333; line-height: 1.4; }
-        #waypoints-list { max-height: 90px; overflow-y: auto; padding-left: 20px; margin: 6px 0; font-size: 0.8rem; }
+        #waypoints-list { max-height: 95px; overflow-y: auto; padding-left: 20px; margin: 4px 0; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <h2>HỆ THỐNG ĐIỀU KHIỂN & LƯU TRỮ HỒ SƠ VƯỜN</h2>
+    <h2>TRẠM ĐIỀU KHIỂN & CHẤM LỘ TRÌNH ROBOT</h2>
     <div id="status">Trạng thái: Đang kết nối ROS...</div>
     
     <div class="main-container">
-        <!-- Khung bản đồ -->
+        <!-- Khung Map Canvas -->
         <div>
             <div id="map-box"></div>
             <p style="font-size: 0.85rem; color: #555; margin-top: 6px;">
-                💡 <b>Hướng dẫn:</b> Nhấp chuột vào luống cây để sinh lộ trình bẻ vuông góc tự động.
+                💡 <b>Hướng dẫn:</b> Click liên tiếp trên rãnh đi để tạo lộ trình P1, P2... Xem chi tiết trên <b>RViz2</b>.
             </p>
         </div>
 
         <!-- Bảng Cấu Hình Vườn -->
         <div class="panel config-panel">
-            <h3>Thông Số Vườn</h3>
+            <h3 style="margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 6px; font-size: 1.05rem;">Thông Số Mảnh Vườn</h3>
             <div class="form-group">
-                <label>Tên khu vườn / Map:</label>
-                <input type="text" id="cfg-farm-name" value="Khu_A" style="width: 110px; text-align: left;">
+                <label>Tên mảnh vườn:</label>
+                <input type="text" id="cfg-farm-name" value="Khu_A" style="width: 105px; text-align: left;">
             </div>
             <div class="form-group">
-                <label>Số lượng luống đất:</label>
-                <input type="number" id="cfg-num-beds" value="" placeholder="Trống" step="1">
+                <label>Số luống trồng:</label>
+                <input type="number" id="cfg-num-beds" value="">
             </div>
             <div class="form-group">
-                <label>Độ rộng 1 mô đất (m):</label>
-                <input type="number" id="cfg-bed-width" value="" placeholder="Trống" step="0.1">
+                <label>Bề rộng một luống (m):</label>
+                <input type="number" id="cfg-bed-width" value="" step="0.1">
             </div>
             <div class="form-group">
-                <label>Lối đi xe chạy (m):</label>
-                <input type="number" id="cfg-aisle-width" value="" placeholder="Trống" step="0.1">
+                <label>Bề rộng rãnh xe chạy (m):</label>
+                <input type="number" id="cfg-aisle-width" value="" step="0.1">
             </div>
             <div class="form-group">
-                <label>Tọa độ tim luống đầu X (m):</label>
-                <input type="number" id="cfg-first-bed-x" value="" placeholder="Trống" step="0.1">
+                <label>Vị trí luống đầu tiên X (m):</label>
+                <input type="number" id="cfg-first-bed-x" value="" step="0.1">
             </div>
             <div class="form-group">
-                <label>Vị trí đầu luống Y (m):</label>
-                <input type="number" id="cfg-bed-start-y" value="" placeholder="Trống" step="0.1">
+                <label>Vị trí đầu hàng cây Y (m):</label>
+                <input type="number" id="cfg-bed-start-y" value="" step="0.1">
             </div>
             <div class="form-group">
-                <label>Chiều dài luống cây (m):</label>
-                <input type="number" id="cfg-bed-length" value="" placeholder="Trống" step="0.5">
-            </div>
-            <div class="form-group">
-                <label>Khoảng lùi hành lang (m):</label>
-                <input type="number" id="cfg-corridor-offset" value="" placeholder="Trống" step="0.1">
+                <label>Chiều dài của luống (m):</label>
+                <input type="number" id="cfg-bed-length" value="" step="0.5">
             </div>
 
-            <button class="btn-action btn-save-robot" onclick="saveConfigToRobot()">LƯU VÀO ROBOT</button>
-            <button class="btn-action btn-new-farm" onclick="createNewFarm()">TẠO KHU VỰC MỚI (XÓA TRẮNG)</button>
-
+            <button class="btn-action btn-save-robot" onclick="saveConfigToRobot()">LƯU CẤU HÌNH VÀO ROBOT</button>
+            <button class="btn-action btn-new-farm" onclick="createNewFarm()">🗑 TẠO KHU VỰC MỚI (XÓA TRẮNG TOÀN BỘ)</button>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-            <button class="btn-action btn-io" onclick="exportFarmConfig()">XUẤT FILE SAO LƯU (JSON)</button>
+            <button class="btn-action" style="background-color: #17a2b8;" onclick="exportFarmConfig()">XUẤT BẢN SAO LƯU (JSON)</button>
             <input type="file" id="import-file" style="display: none;" onchange="importFarmConfig(event)">
-            <button class="btn-action btn-io" style="background-color: #6c757d;" onclick="document.getElementById('import-file').click()">NHẬP FILE SAO LƯU (JSON)</button>
+            <button class="btn-action" style="background-color: #6c757d;" onclick="document.getElementById('import-file').click()">NHẬP BẢN SAO LƯU (JSON)</button>
         </div>
 
-        <!-- Bảng điều khiển lộ trình & Lái -->
+        <!-- Bảng Điều Khiển Lộ Trình & Lái Tay -->
         <div class="panel control-panel">
-            <h3>Lộ Trình Tự Hành</h3>
+            <button class="btn-action btn-estop" onclick="triggerEmergencyStop()">🛑 DỪNG KHẨN CẤP (E-STOP)</button>
+
+            <h3 style="margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 4px; font-size: 1.05rem;">Lộ Trình Tự Hành</h3>
             <div class="info-box">
                 <div><b>Trạng thái:</b> <span id="mission-status">Chờ tạo điểm</span></div>
                 <ol id="waypoints-list"></ol>
             </div>
-            <div style="margin-top: 10px;">
+            <div style="margin-top: 8px;">
                 <button class="btn-action btn-start" onclick="sendWaypointsMission()">BẮT ĐẦU CHẠY LỘ TRÌNH</button>
-                <button class="btn-action btn-clear" onclick="clearWaypoints()">XÓA LỘ TRÌNH</button>
-                <button class="btn-action" style="background-color: #fd7e14;" onclick="saveSlamMap()">LƯU BẢN ĐỒ SLAM</button>
-                <button id="btn-row-follow" class="btn-action" style="background-color: #6f42c1;" onclick="toggleRowFollow()">BẬT BÁM LUỐNG TỰ ĐỘNG</button>
+                <button class="btn-action btn-undo" onclick="undoLastWaypoint()">↩ HOÀN TÁC (XÓA ĐIỂM VỪA BẤM)</button>
+                <button class="btn-clear btn-action" onclick="clearWaypoints()">XÓA HẾT LỘ TRÌNH</button>
             </div>
 
-            <h3>Lái Thủ Công</h3>
+            <h3 style="margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 4px; font-size: 1.05rem;">Lái Thủ Công</h3>
             <div class="btn-grid">
                 <div></div>
                 <button class="btn-move" onclick="sendCmd(0.3, 0.0)">TIẾN</button>
@@ -122,31 +121,63 @@
     </div>
 
     <script>
-        // 1. Kết nối ROSBridge
+        // 1. Quản lý Cache Thông Số (localStorage)
+        function fillForm(cfg) {
+            if (!cfg || cfg.status === "EMPTY") {
+                clearFormInputs();
+                return;
+            }
+            if (cfg.farmName !== undefined) document.getElementById('cfg-farm-name').value = cfg.farmName;
+            if (cfg.numBeds !== undefined) document.getElementById('cfg-num-beds').value = cfg.numBeds;
+            if (cfg.bedWidth !== undefined) document.getElementById('cfg-bed-width').value = cfg.bedWidth;
+            if (cfg.aisleWidth !== undefined) document.getElementById('cfg-aisle-width').value = cfg.aisleWidth;
+            if (cfg.firstBedX !== undefined) document.getElementById('cfg-first-bed-x').value = cfg.firstBedX;
+            if (cfg.bedStartY !== undefined) document.getElementById('cfg-bed-start-y').value = cfg.bedStartY;
+            if (cfg.bedLength !== undefined) document.getElementById('cfg-bed-length').value = cfg.bedLength;
+        }
+
+        function clearFormInputs() {
+            document.getElementById('cfg-farm-name').value = "Khu_Moi";
+            document.getElementById('cfg-num-beds').value = "";
+            document.getElementById('cfg-bed-width').value = "";
+            document.getElementById('cfg-aisle-width').value = "";
+            document.getElementById('cfg-first-bed-x').value = "";
+            document.getElementById('cfg-bed-start-y').value = "";
+            document.getElementById('cfg-bed-length').value = "";
+        }
+
+        try {
+            const cached = localStorage.getItem('last_active_farm_config');
+            if (cached) fillForm(JSON.parse(cached));
+        } catch(e) {}
+
+        // 2. Kết nối ROSBridge
         const ros = new ROSLIB.Ros({ url: 'ws://localhost:9090' });
         const statusText = document.getElementById('status');
         const missionStatus = document.getElementById('mission-status');
         const waypointsListEl = document.getElementById('waypoints-list');
 
+        const requestConfigPub = new ROSLIB.Topic({ ros: ros, name: '/farm_config/request', messageType: 'std_msgs/msg/Empty' });
+
         ros.on('connection', () => {
             statusText.innerText = 'Trạng thái: Đã kết nối ROS thành công (Port 9090)';
             statusText.style.color = 'green';
+            initMapClient();
+            requestConfigPub.publish(new ROSLIB.Message({}));
         });
-        ros.on('error', () => {
-            statusText.innerText = 'Trạng thái: Lỗi kết nối!';
-            statusText.style.color = 'red';
-        });
-        ros.on('close', () => {
-            statusText.innerText = 'Trạng thái: Mất kết nối tới ROS!';
-            statusText.style.color = 'red';
+        ros.on('error', () => { statusText.innerText = 'Trạng thái: Lỗi kết nối!'; statusText.style.color = 'red'; });
+        ros.on('close', () => { statusText.innerText = 'Trạng thái: Mất kết nối tới ROS!'; statusText.style.color = 'red'; });
+
+        // 3. Topics & Services Điều Khiển
+        const cmdVel = new ROSLIB.Topic({ ros: ros, name: '/cmd_vel', messageType: 'geometry_msgs/msg/Twist' });
+        const goalTopic = new ROSLIB.Topic({ ros: ros, name: '/goal_pose', messageType: 'geometry_msgs/msg/PoseStamped' });
+
+        const cancelNav2Client = new ROSLIB.Service({
+            ros: ros,
+            name: '/navigate_to_pose/_action/cancel_goal',
+            serviceType: 'action_msgs/srv/CancelGoal'
         });
 
-        // 2. Lái xe thủ công
-        const cmdVel = new ROSLIB.Topic({
-            ros: ros,
-            name: '/cmd_vel',
-            messageType: 'geometry_msgs/msg/Twist'
-        });
         function sendCmd(linearX, angularZ) {
             cmdVel.publish(new ROSLIB.Message({
                 linear: { x: linearX, y: 0.0, z: 0.0 },
@@ -154,15 +185,27 @@
             }));
         }
 
-        // 3. Khởi tạo bản đồ ROS2D
-        const viewer = new ROS2D.Viewer({ divID: 'map-box', width: 500, height: 500 });
-        const gridClient = new ROS2D.OccupancyGridClient({ ros: ros, rootObject: viewer.scene, continuous: true });
-        gridClient.on('change', () => {
-            viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
-            viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
-        });
+        function triggerEmergencyStop() {
+            isMissionRunning = false;
+            missionStatus.innerText = "🛑 ĐÃ DỪNG KHẨN CẤP!";
+            missionStatus.style.color = "red";
 
-        const lidarContainer = new createjs.Container();
+            try {
+                cancelNav2Client.callService(new ROSLIB.ServiceRequest({
+                    goal_info: { goal_id: { uuid: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] } }
+                }), () => {});
+            } catch(e) {}
+
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => sendCmd(0.0, 0.0), i * 50);
+            }
+            alert("Đã phanh dừng khẩn cấp và hủy mục tiêu Nav2!");
+        }
+
+        // 4. Khung Bản Đồ Canvas ROS2D
+        const viewer = new ROS2D.Viewer({ divID: 'map-box', width: 480, height: 480 });
+        let gridClient = null;
+        const mapContainer = new createjs.Container();
         const waypointsContainer = new createjs.Container();
         const robotMarker = new createjs.Container();
 
@@ -171,192 +214,109 @@
         robotMarker.addChild(robotShape);
         robotMarker.visible = false;
 
-        viewer.scene.addChild(lidarContainer);
+        viewer.scene.addChild(mapContainer);
         viewer.scene.addChild(waypointsContainer);
         viewer.scene.addChild(robotMarker);
 
-        // 4. Lấy vị trí Robot
-        const poseSub = new ROSLIB.Topic({
-            ros: ros,
-            name: '/amcl_pose',
-            messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped'
-        });
+        function initMapClient() {
+            if (gridClient) return;
+            gridClient = new ROS2D.OccupancyGridClient({ ros: ros, rootObject: mapContainer, continuous: true });
+            gridClient.on('change', () => {
+                viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+                viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+            });
+        }
+
+        // Đọc AMCL Pose
+        const poseSub = new ROSLIB.Topic({ ros: ros, name: '/amcl_pose', messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped' });
         let currentRobotPose = null;
         let robotYaw = 0.0;
 
         poseSub.subscribe((msg) => {
             const pos = msg.pose.pose.position;
             const q = msg.pose.pose.orientation;
-            currentRobotPose = pos;
-            robotMarker.x = pos.x;
-            robotMarker.y = -pos.y;
+            currentRobotPose = { x: pos.x, y: pos.y };
+
             const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
             const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
             robotYaw = Math.atan2(siny_cosp, cosy_cosp);
+
+            robotMarker.x = currentRobotPose.x;
+            robotMarker.y = -currentRobotPose.y;
             robotMarker.rotation = -robotYaw * (180 / Math.PI);
             robotMarker.visible = true;
         });
 
-        // 5. Hiển thị LiDAR
-        const scanSub = new ROSLIB.Topic({
-            ros: ros,
-            name: '/scan',
-            messageType: 'sensor_msgs/msg/LaserScan',
-            throttle_rate: 100
-        });
-        const lidarGraphics = new createjs.Shape();
-        lidarContainer.addChild(lidarGraphics);
-
-        scanSub.subscribe((scan) => {
-            if (!robotMarker.visible || !currentRobotPose) return;
-            lidarGraphics.graphics.clear();
-            lidarGraphics.graphics.beginFill("rgba(255, 0, 0, 0.8)");
-            const rx = currentRobotPose.x;
-            const ry = -currentRobotPose.y;
-            for (let i = 0; i < scan.ranges.length; i += 6) {
-                const r = scan.ranges[i];
-                if (r >= scan.range_min && r <= scan.range_max) {
-                    const angle = robotYaw + scan.angle_min + (i * scan.angle_increment);
-                    lidarGraphics.graphics.drawCircle(rx + r * Math.cos(angle), ry - r * Math.sin(angle), 0.05);
-                }
-            }
-        });
-
-        // 6. GIAO TIẾP VỚI FARM_MANAGER (LƯU TRỮ VÀ NẠP NỘI BỘ TRÊN ROBOT)
-        const currentConfigSub = new ROSLIB.Topic({
-            ros: ros,
-            name: '/farm_config/current',
-            messageType: 'std_msgs/msg/String'
-        });
-
-        const saveConfigPub = new ROSLIB.Topic({
-            ros: ros,
-            name: '/farm_config/save',
-            messageType: 'std_msgs/msg/String'
-        });
-
-        // Tự động điền dữ liệu khi nhận cấu hình từ Robot
-        currentConfigSub.subscribe((msg) => {
-            try {
-                const cfg = JSON.parse(msg.data);
-                if (cfg.status !== "EMPTY") {
-                    document.getElementById('cfg-farm-name').value = cfg.farmName || "Khu_A";
-                    document.getElementById('cfg-num-beds').value = cfg.numBeds || 5;
-                    document.getElementById('cfg-bed-width').value = cfg.bedWidth || 0.8;
-                    document.getElementById('cfg-aisle-width').value = cfg.aisleWidth || 1.4;
-                    document.getElementById('cfg-first-bed-x').value = cfg.firstBedX || -4.4;
-                    document.getElementById('cfg-bed-start-y').value = cfg.bedStartY || 0.0;
-                    document.getElementById('cfg-bed-length').value = cfg.bedLength || 10.0;
-                    document.getElementById('cfg-corridor-offset').value = cfg.corridorOffset || 1.8;
-                    statusText.innerText = "Trạng thái: Đã tự động nạp cấu hình vườn hiện tại từ Robot!";
-                    statusText.style.color = "green";
-                }
-            } catch (e) {
-                console.error("Lỗi nạp cấu hình:", e);
-            }
-        });
-
-        function getFarmConfig() {
-            const numBeds = parseInt(document.getElementById('cfg-num-beds').value);
-            if (isNaN(numBeds)) return null;
-
-            return {
-                status: "READY",
-                farmName: document.getElementById('cfg-farm-name').value,
-                numBeds: numBeds,
-                bedWidth: parseFloat(document.getElementById('cfg-bed-width').value) || 0.8,
-                aisleWidth: parseFloat(document.getElementById('cfg-aisle-width').value) || 1.4,
-                firstBedX: parseFloat(document.getElementById('cfg-first-bed-x').value) || -4.4,
-                bedStartY: parseFloat(document.getElementById('cfg-bed-start-y').value) || 0.0,
-                bedLength: parseFloat(document.getElementById('cfg-bed-length').value) || 10.0,
-                corridorOffset: parseFloat(document.getElementById('cfg-corridor-offset').value) || 1.8
-            };
-        }
-
-        function saveConfigToRobot() {
-            const cfg = getFarmConfig();
-            if (!cfg) {
-                alert("Vui lòng điền đầy đủ các thông số vườn trước khi lưu!");
-                return;
-            }
-            saveConfigPub.publish(new ROSLIB.Message({ data: JSON.stringify(cfg) }));
-            alert("Đã lưu thông số vào bộ nhớ nội bộ của Robot!");
-        }
-
-        function createNewFarm() {
-            if (confirm("Tạo khu vực mới sẽ làm trống toàn bộ thông số để bạn quét SLAM lại. Bạn có chắc không?")) {
-                document.getElementById('cfg-farm-name').value = "Khu_Moi";
-                document.getElementById('cfg-num-beds').value = "";
-                document.getElementById('cfg-bed-width').value = "";
-                document.getElementById('cfg-aisle-width').value = "";
-                document.getElementById('cfg-first-bed-x').value = "";
-                document.getElementById('cfg-bed-start-y').value = "";
-                document.getElementById('cfg-bed-length').value = "";
-                document.getElementById('cfg-corridor-offset').value = "";
-                
-                saveConfigPub.publish(new ROSLIB.Message({ data: JSON.stringify({ status: "EMPTY" }) }));
-                clearWaypoints();
-                alert("Đã làm trống hồ sơ. Bây giờ bạn có thể lái xe quét SLAM và lưu bản đồ mới!");
-            }
-        }
-
-        // Tính toán tim các lối đi
-        function calculateAisleCenters(cfg) {
-            const pitch = cfg.bedWidth + cfg.aisleWidth;
-            let aisles = [];
-            for (let i = 0; i < cfg.numBeds - 1; i++) {
-                const bedX = cfg.firstBedX + i * pitch;
-                const aisleX = bedX + (cfg.bedWidth / 2.0) + (cfg.aisleWidth / 2.0);
-                aisles.push(aisleX);
-            }
-            return aisles;
-        }
-
-        // 7. Xử lý chấm lộ trình tự nắn đường vuông góc
+        // 5. Quản Lý Danh Sách Waypoints & Chặn Click Pixel Màu Đen
         let waypoints = [];
-        viewer.scene.addEventListener('stagemousedown', (event) => {
-            const cfg = getFarmConfig();
-            const stagePos = viewer.scene.globalToLocal(event.stageX, event.stageY);
-            const targetX = stagePos.x;
-            const targetY = -stagePos.y;
 
-            // Nếu map chưa có thông số -> Chạy như điểm chấm tự do
-            if (!cfg) {
-                waypoints.push({ x: targetX, y: targetY, yaw: 0.0 });
-                renderWaypoints();
+        function isClickOnBlackPixel(canvasX, canvasY) {
+            const canvasEl = document.querySelector('#map-box canvas');
+            if (!canvasEl) return false;
+            const ctx = canvasEl.getContext('2d');
+            if (!ctx) return false;
+
+            // Đọc màu RGBA của pixel tại tọa độ click
+            const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
+            const r = pixel[0];
+            const g = pixel[1];
+            const b = pixel[2];
+            const a = pixel[3];
+
+            // Nếu pixel màu đen/tối (vật cản / luống đất: R, G, B đều < 60)
+            if (a > 50 && r < 60 && g < 60 && b < 60) {
+                return true;
+            }
+            return false;
+        }
+
+        viewer.scene.addEventListener('stagemousedown', (event) => {
+            const canvasX = Math.round(event.stageX);
+            const canvasY = Math.round(event.stageY);
+
+            // Kiểm tra màu pixel trực tiếp trên màn hình
+            if (isClickOnBlackPixel(canvasX, canvasY)) {
+                missionStatus.innerText = "⚠️ Không thể chấm vào luống trồng hoặc vật cản màu đen!";
+                missionStatus.style.color = "#dc3545";
+                setTimeout(() => {
+                    if (missionStatus.innerText.includes("Không thể")) {
+                        missionStatus.innerText = `${waypoints.length} điểm đã chọn`;
+                        missionStatus.style.color = "#333";
+                    }
+                }, 2000);
                 return;
             }
 
-            const aisleCenters = calculateAisleCenters(cfg);
-            const corridorY = cfg.bedStartY - cfg.corridorOffset;
-            const entryY = cfg.bedStartY + 0.5;
-
-            const startX = (waypoints.length > 0) ? waypoints[waypoints.length - 1].x : (currentRobotPose ? currentRobotPose.x : targetX);
-            const startY = (waypoints.length > 0) ? waypoints[waypoints.length - 1].y : (currentRobotPose ? currentRobotPose.y : targetY);
-
-            if (targetY > cfg.bedStartY && startY <= corridorY + 0.3) {
-                let bestAisle = aisleCenters.reduce((prev, curr) => Math.abs(curr - targetX) < Math.abs(prev - targetX) ? curr : prev);
-                waypoints.push({ x: bestAisle, y: corridorY, yaw: 1.5708 });
-                waypoints.push({ x: bestAisle, y: entryY, yaw: 1.5708 });
-                waypoints.push({ x: bestAisle, y: targetY, yaw: 1.5708 });
-            } 
-            else if (targetY <= corridorY && startY > cfg.bedStartY) {
-                let bestAisle = aisleCenters.reduce((prev, curr) => Math.abs(curr - startX) < Math.abs(prev - startX) ? curr : prev);
-                waypoints.push({ x: bestAisle, y: entryY, yaw: -1.5708 });
-                waypoints.push({ x: bestAisle, y: corridorY, yaw: -1.5708 });
-                waypoints.push({ x: targetX, y: targetY, yaw: 0.0 });
-            } 
-            else {
-                waypoints.push({ x: targetX, y: targetY, yaw: 0.0 });
-            }
-
+            const stagePos = viewer.scene.globalToLocal(event.stageX, event.stageY);
+            waypoints.push({ x: stagePos.x, y: -stagePos.y });
             renderWaypoints();
         });
+
+        function undoLastWaypoint() {
+            if (waypoints.length === 0) return;
+            waypoints.pop();
+            renderWaypoints();
+        }
+
+        function clearWaypoints() {
+            waypoints = [];
+            isMissionRunning = false;
+            try {
+                cancelNav2Client.callService(new ROSLIB.ServiceRequest({
+                    goal_info: { goal_id: { uuid: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] } }
+                }), () => {});
+            } catch(e) {}
+            sendCmd(0.0, 0.0);
+            renderWaypoints();
+            missionStatus.innerText = "Chờ tạo điểm";
+            missionStatus.style.color = "#333";
+        }
 
         function renderWaypoints() {
             waypointsContainer.removeAllChildren();
             waypointsListEl.innerHTML = '';
-            missionStatus.innerText = `${waypoints.length} điểm đã tạo`;
+            missionStatus.innerText = `${waypoints.length} điểm đã chọn`;
+            missionStatus.style.color = "#333";
 
             const pathLine = new createjs.Shape();
             pathLine.graphics.setStrokeStyle(0.04).beginStroke("#28a745");
@@ -376,19 +336,7 @@
             waypointsContainer.addChildAt(pathLine, 0);
         }
 
-        function clearWaypoints() {
-            waypoints = [];
-            isMissionRunning = false;
-            renderWaypoints();
-            missionStatus.innerText = "Chờ tạo điểm";
-        }
-
-        // 8. Chạy lộ trình Nav2
-        const goalTopic = new ROSLIB.Topic({
-            ros: ros,
-            name: '/goal_pose',
-            messageType: 'geometry_msgs/msg/PoseStamped'
-        });
+        // 6. Thực Thi Lộ Trình
         let currentWaypointIndex = 0;
         let isMissionRunning = false;
 
@@ -410,18 +358,16 @@
                 clearWaypoints();
                 return;
             }
-            const target = waypoints[currentWaypointIndex];
-            missionStatus.innerText = `Đang chạy điểm ${currentWaypointIndex + 1}/${waypoints.length}`;
 
-            const yaw = target.yaw || 0.0;
-            const qz = Math.sin(yaw / 2);
-            const qw = Math.cos(yaw / 2);
+            const target = waypoints[currentWaypointIndex];
+            missionStatus.innerText = `Đang chạy điểm P${currentWaypointIndex + 1}/${waypoints.length}`;
+            missionStatus.style.color = "#007bff";
 
             const poseStamped = new ROSLIB.Message({
                 header: { frame_id: 'map', stamp: { sec: 0, nanosec: 0 } },
                 pose: {
                     position: { x: target.x, y: target.y, z: 0.0 },
-                    orientation: { x: 0.0, y: 0.0, z: qz, w: qw }
+                    orientation: { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }
                 }
             });
             goalTopic.publish(poseStamped);
@@ -432,19 +378,78 @@
             const target = waypoints[currentWaypointIndex];
             const dx = currentRobotPose.x - target.x;
             const dy = currentRobotPose.y - target.y;
-            if (Math.sqrt(dx * dx + dy * dy) < 0.6) {
+            if (Math.hypot(dx, dy) < 0.65) {
                 currentWaypointIndex++;
                 executeNextWaypoint();
             }
-        }, 500);
+        }, 400);
 
-        // 9. Export / Import sao lưu dự phòng
-        function exportFarmConfig() {
+        // 7. Đồng Bộ Cấu Hình Robot
+        const currentConfigSub = new ROSLIB.Topic({ ros: ros, name: '/farm_config/current', messageType: 'std_msgs/msg/String' });
+        const saveConfigPub = new ROSLIB.Topic({ ros: ros, name: '/farm_config/save', messageType: 'std_msgs/msg/String' });
+
+        currentConfigSub.subscribe((msg) => {
+            try {
+                const cfg = JSON.parse(msg.data);
+                if (cfg && cfg.status !== "EMPTY") {
+                    fillForm(cfg);
+                    localStorage.setItem('last_active_farm_config', JSON.stringify(cfg));
+                    statusText.innerText = "Trạng thái: Đã đồng bộ cấu hình vườn từ Robot!";
+                    statusText.style.color = "green";
+                }
+            } catch (e) {}
+        });
+
+        function getFarmConfig() {
+            const numBeds = parseInt(document.getElementById('cfg-num-beds').value);
+            if (isNaN(numBeds)) return null;
+
+            return {
+                status: "READY",
+                farmName: document.getElementById('cfg-farm-name').value,
+                numBeds: numBeds,
+                bedWidth: parseFloat(document.getElementById('cfg-bed-width').value) || 0.8,
+                aisleWidth: parseFloat(document.getElementById('cfg-aisle-width').value) || 1.4,
+                firstBedX: parseFloat(document.getElementById('cfg-first-bed-x').value) || -4.4,
+                bedStartY: parseFloat(document.getElementById('cfg-bed-start-y').value) || 0.0,
+                bedLength: parseFloat(document.getElementById('cfg-bed-length').value) || 10.0
+            };
+        }
+
+        function saveConfigToRobot() {
             const cfg = getFarmConfig();
             if (!cfg) {
-                alert("Không có thông số nào để xuất file!");
+                alert("Vui lòng điền đầy đủ các thông số trước khi lưu!");
                 return;
             }
+            saveConfigPub.publish(new ROSLIB.Message({ data: JSON.stringify(cfg) }));
+            localStorage.setItem('last_active_farm_config', JSON.stringify(cfg));
+            alert("Đã lưu thông số vào Robot!");
+        }
+
+        function createNewFarm() {
+            if (confirm("Bạn có chắc chắn muốn XÓA TRẮNG toàn bộ thông số và xóa bản đồ hiển thị để bắt đầu SLAM khu vực mới không?")) {
+                localStorage.removeItem('last_active_farm_config');
+                clearFormInputs();
+                clearWaypoints();
+
+                mapContainer.removeAllChildren();
+                robotMarker.visible = false;
+                if (gridClient) {
+                    gridClient.unsubscribe();
+                    gridClient = null;
+                }
+
+                saveConfigPub.publish(new ROSLIB.Message({ data: JSON.stringify({ status: "EMPTY" }) }));
+                statusText.innerText = "Trạng thái: Đã xóa trắng bản đồ & thông số. Hãy bật SLAM để quét khu vực mới!";
+                statusText.style.color = "#dc3545";
+                alert("Đã dọn sạch màn hình! Bây giờ mày có thể tắt bringup và chạy lệnh slam_mapping để quét map mới.");
+            }
+        }
+
+        function exportFarmConfig() {
+            const cfg = getFarmConfig();
+            if (!cfg) return;
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cfg, null, 2));
             const dlAnchor = document.createElement('a');
             dlAnchor.setAttribute("href", dataStr);
@@ -459,60 +464,12 @@
             reader.onload = function(e) {
                 try {
                     const cfg = JSON.parse(e.target.result);
-                    document.getElementById('cfg-farm-name').value = cfg.farmName || "Khu_Import";
-                    document.getElementById('cfg-num-beds').value = cfg.numBeds || 5;
-                    document.getElementById('cfg-bed-width').value = cfg.bedWidth || 0.8;
-                    document.getElementById('cfg-aisle-width').value = cfg.aisleWidth || 1.4;
-                    document.getElementById('cfg-first-bed-x').value = cfg.firstBedX || -4.4;
-                    document.getElementById('cfg-bed-start-y').value = cfg.bedStartY || 0.0;
-                    document.getElementById('cfg-bed-length').value = cfg.bedLength || 10.0;
-                    document.getElementById('cfg-corridor-offset').value = cfg.corridorOffset || 1.8;
-                    alert("Đã nạp file sao lưu vào form! Hãy nhấn 'LƯU VÀO ROBOT' để áp dụng.");
-                } catch (err) {
-                    alert("Lỗi đọc file cấu hình JSON!");
-                }
+                    fillForm(cfg);
+                    localStorage.setItem('last_active_farm_config', JSON.stringify(cfg));
+                    alert("Đã nạp file thành công! Nhấn 'LƯU CẤU HÌNH VÀO ROBOT' để áp dụng.");
+                } catch (err) {}
             };
             reader.readAsText(file);
-        }
-
-        // 10. Lưu bản đồ SLAM
-        const saveMapClient = new ROSLIB.Service({
-            ros: ros,
-            name: '/slam_toolbox/save_map',
-            serviceType: 'slam_toolbox/srv/SaveMap'
-        });
-        function saveSlamMap() {
-            const farmName = document.getElementById('cfg-farm-name').value || "my_farm_map";
-            statusText.innerText = "Trạng thái: Đang gửi lệnh lưu bản đồ...";
-            const request = new ROSLIB.ServiceRequest({
-                name: { data: `/home/heo/robot_ws/src/my_bot/maps/${farmName}` }
-            });
-            saveMapClient.callService(request, () => {
-                alert(`Đã lưu bản đồ thành công vào src/my_bot/maps/${farmName}!`);
-                statusText.innerText = "Trạng thái: Đã lưu bản đồ thành công!";
-            }, () => {
-                alert("Lỗi khi lưu bản đồ! Hãy kiểm tra xem slam_toolbox đã bật chưa.");
-            });
-        }
-
-        // 11. Bật/Tắt bám luống tự động
-        const rowFollowTopic = new ROSLIB.Topic({
-            ros: ros,
-            name: '/row_follow_enable',
-            messageType: 'std_msgs/msg/Bool'
-        });
-        let isRowFollowing = false;
-        function toggleRowFollow() {
-            isRowFollowing = !isRowFollowing;
-            const btn = document.getElementById('btn-row-follow');
-            rowFollowTopic.publish(new ROSLIB.Message({ data: isRowFollowing }));
-            if (isRowFollowing) {
-                btn.innerText = "DỪNG BÁM LUỐNG";
-                btn.style.backgroundColor = "#e83e8c";
-            } else {
-                btn.innerText = "BẬT BÁM LUỐNG TỰ ĐỘNG";
-                btn.style.backgroundColor = "#6f42c1";
-            }
         }
     </script>
 </body>

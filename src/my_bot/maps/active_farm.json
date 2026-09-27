@@ -6,6 +6,5 @@
   "aisleWidth": 1.4,
   "firstBedX": -4.4,
   "bedStartY": 0,
-  "bedLength": 10,
-  "corridorOffset": 1.8
+  "bedLength": 10
 }
