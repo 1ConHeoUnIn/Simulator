@@ -1,1 +1,0 @@
-/home/heo/robot_ws/src/my_bot/launch/slam_mapping.launch.py

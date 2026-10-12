@@ -1,0 +1,2447 @@
+=== CẤU TRÚC THƯ MỤC SRC ===
+src/
+├── hmmm
+│   └── index.html
+└── my_bot
+    ├── config
+    │   ├── mapper_params_online_async.yaml
+    │   └── nav2_params.yaml
+    ├── launch
+    │   ├── bringup.launch.py
+    │   ├── navigation.launch.py
+    │   ├── rsp.launch.py
+    │   ├── sim.launch.py
+    │   └── slam_mapping.launch.py
+    ├── maps
+    │   ├── active_farm.json
+    │   ├── generate_map.py
+    │   ├── my_farm_map.pgm
+    │   └── my_farm_map.yaml
+    ├── my_bot
+    │   ├── farm_manager.py
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── farm_manager.cpython-310.pyc
+    │   │   ├── __init__.cpython-310.pyc
+    │   │   └── row_detector.cpython-310.pyc
+    │   └── row_detector.py
+    ├── package.xml
+    ├── resource
+    │   └── my_bot
+    ├── setup.cfg
+    ├── setup.py
+    ├── test
+    │   ├── test_copyright.py
+    │   ├── test_flake8.py
+    │   └── test_pep257.py
+    ├── urdf
+    │   ├── camera.xacro
+    │   ├── gazebo_control.xacro
+    │   ├── imu.xacro
+    │   ├── inertial_macros.xacro
+    │   ├── lidar.xacro
+    │   ├── robot_core.xacro
+    │   └── robot.urdf.xacro
+    └── worlds
+        └── obstacles.world
+
+11 directories, 33 files
+
+=== TOÀN BỘ NỘI DUNG CODE ===
+
+--------------------------------------------------
+FILE: src/my_bot/my_bot/row_detector.py
+--------------------------------------------------
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+import cv2
+
+class CameraMonitor(Node):
+    def __init__(self):
+        super().__init__('row_detector')
+        
+        self.image_sub = self.create_subscription(
+            Image,
+            '/camera/image_raw',
+            self.image_callback,
+            10
+        )
+        self.image_pub = self.create_publisher(
+            Image,
+            '/camera/row_detected',
+            10
+        )
+        self.bridge = CvBridge()
+        self.get_logger().info('Camera Monitor sẵn sàng phục vụ quan sát trực tiếp!')
+
+    def image_callback(self, msg: Image):
+        try:
+            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        except Exception:
+            return
+
+        h, w, _ = frame.shape
+        mid_x = w // 2
+
+        # Vẽ tâm lái ngắm góc nhìn robot
+        cv2.line(frame, (mid_x, 0), (mid_x, h), (255, 0, 0), 2)
+        cv2.putText(frame, "CHE DO: GIAM SAT CAMERA", (20, 35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+        self.image_pub.publish(self.bridge.cv2_to_imgmsg(frame, encoding='bgr8'))
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = CameraMonitor()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+--------------------------------------------------
+FILE: src/my_bot/my_bot/__init__.py
+--------------------------------------------------
+
+--------------------------------------------------
+FILE: src/my_bot/my_bot/farm_manager.py
+--------------------------------------------------
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String, Empty
+from rclpy.qos import QoSProfile, DurabilityPolicy
+import json
+import os
+
+class FarmManager(Node):
+    def __init__(self):
+        super().__init__('farm_manager')
+
+        # Thư mục lưu cấu hình vườn
+        self.config_dir = os.path.expanduser('~/robot_ws/src/my_bot/maps')
+        self.active_file = os.path.join(self.config_dir, 'active_farm.json')
+        os.makedirs(self.config_dir, exist_ok=True)
+
+        latching_qos = QoSProfile(depth=1)
+        latching_qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+
+        # Topic phát cấu hình hiện tại
+        self.current_pub = self.create_publisher(String, '/farm_config/current', latching_qos)
+
+        # Topic nhận yêu cầu lưu từ Web
+        self.save_sub = self.create_subscription(String, '/farm_config/save', self.save_callback, 10)
+
+        # Topic nhận yêu cầu gửi lại cấu hình từ Web (khi Web vừa F5)
+        self.req_sub = self.create_subscription(Empty, '/farm_config/request', self.request_callback, 10)
+
+        # Phát cấu hình có sẵn khi khởi động
+        self.publish_current_config()
+        self.get_logger().info('Farm Manager đã sẵn sàng phục vụ lưu trữ cấu hình!')
+
+    def publish_current_config(self):
+        msg = String()
+        if os.path.exists(self.active_file):
+            try:
+                with open(self.active_file, 'r') as f:
+                    data = json.load(f)
+                msg.data = json.dumps(data)
+                self.get_logger().info('Đã đọc và phát active_farm.json lên Web.')
+            except Exception as e:
+                self.get_logger().error(f'Lỗi đọc active_farm.json: {e}')
+                msg.data = json.dumps({"status": "EMPTY"})
+        else:
+            msg.data = json.dumps({"status": "EMPTY"})
+
+        self.current_pub.publish(msg)
+
+    def request_callback(self, msg: Empty):
+        self.get_logger().info('Nhận tín hiệu yêu cầu nạp cấu hình từ Web -> Phát lại!')
+        self.publish_current_config()
+
+    def save_callback(self, msg: String):
+        try:
+            data = json.loads(msg.data)
+            with open(self.active_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            self.get_logger().info(f'Đã lưu thành công cấu hình vào {self.active_file}')
+            self.publish_current_config()
+        except Exception as e:
+            self.get_logger().error(f'Lỗi khi lưu cấu hình: {e}')
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = FarmManager()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+--------------------------------------------------
+FILE: src/my_bot/launch/bringup.launch.py
+--------------------------------------------------
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.launch_description_sources import PythonLaunchDescriptionSource, AnyLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    package_name = 'my_bot'
+    pkg_share = get_package_share_directory(package_name)
+    rosbridge_share = get_package_share_directory('rosbridge_server')
+
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+
+    # 1. Khởi động Gazebo và mô hình robot
+    sim_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'sim.launch.py')
+        ]),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
+    )
+
+    # 2. Khởi động Nav2
+    nav_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'navigation.launch.py')
+        ]),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
+    )
+
+    # 3. Khởi động rosbridge WebSocket server
+    rosbridge_launch = IncludeLaunchDescription(
+        AnyLaunchDescriptionSource([
+            os.path.join(rosbridge_share, 'launch', 'rosbridge_websocket_launch.xml')
+        ])
+    )
+
+    # 4. Quản lý lưu trữ thông số vườn
+    farm_manager_node = Node(
+        package=package_name,
+        executable='farm_manager',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # 5. Bộ não điều phối bám luống tự động
+    row_detector_node = Node(
+        package=package_name,
+        executable='row_detector',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    # 6. Mở trực tiếp màn hình Camera quan sát nhận diện
+    camera_view_node = Node(
+        package='rqt_image_view',
+        executable='rqt_image_view',
+        arguments=['/camera/row_detected'],
+        output='screen'
+    )
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='true',
+            description='Sử dụng thời gian mô phỏng Gazebo nếu true'
+        ),
+        sim_launch,
+        nav_launch,
+        rosbridge_launch,
+        farm_manager_node,
+        row_detector_node,
+        camera_view_node,
+    ])
+--------------------------------------------------
+FILE: src/my_bot/launch/navigation.launch.py
+--------------------------------------------------
+import os
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
+
+def generate_launch_description():
+    package_name = 'my_bot'
+
+    # Đường dẫn tới map và file cấu hình
+    map_file = os.path.join(
+        get_package_share_directory(package_name), 'maps', 'my_farm_map.yaml'
+    )
+    params_file = os.path.join(
+        get_package_share_directory(package_name), 'config', 'nav2_params.yaml'
+    )
+
+    # Gọi launch file chuẩn từ nav2_bringup
+    nav2_launch_dir = os.path.join(
+        get_package_share_directory('nav2_bringup'), 'launch'
+    )
+
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(nav2_launch_dir, 'bringup_launch.py')
+        ),
+        launch_arguments={
+            'map': map_file,
+            'params_file': params_file,
+            'use_sim_time': 'true',
+        }.items(),
+    )
+
+    return LaunchDescription([
+        nav2,
+    ])
+--------------------------------------------------
+FILE: src/my_bot/launch/rsp.launch.py
+--------------------------------------------------
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
+from launch_ros.actions import Node
+import xacro
+
+def generate_launch_description():
+    # Sử dụng thời gian mô phỏng nếu cần
+    use_sim_time = LaunchConfiguration('use_sim_time')
+
+    # Tìm đường dẫn file mô tả xacro
+    pkg_path = os.path.join(get_package_share_directory('my_bot'))
+    xacro_file = os.path.join(pkg_path, 'urdf', 'robot.urdf.xacro')
+    robot_description_config = xacro.process_file(xacro_file)
+
+    # Node Robot State Publisher
+    params = {'robot_description': robot_description_config.toxml(), 'use_sim_time': use_sim_time}
+    node_robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        parameters=[params]
+    )
+
+    # Node Joint State Publisher mặc định chạy ngầm giữ góc 0 cho các khớp revolute
+    node_joint_state_publisher = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='false',
+            description='Use sim time if true'),
+        node_robot_state_publisher,
+        node_joint_state_publisher
+    ])
+--------------------------------------------------
+FILE: src/my_bot/launch/slam_mapping.launch.py
+--------------------------------------------------
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.launch_description_sources import PythonLaunchDescriptionSource, AnyLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    package_name = 'my_bot'
+    pkg_share = get_package_share_directory(package_name)
+    rosbridge_share = get_package_share_directory('rosbridge_server')
+
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+
+    # 1. Gazebo mô phỏng
+    sim_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'sim.launch.py')
+        ]),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
+    )
+
+    # 2. SLAM Toolbox chế độ tạo map online async
+    slam_params_file = os.path.join(pkg_share, 'config', 'mapper_params_online_async.yaml')
+    slam_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')
+        ]),
+        launch_arguments={
+            'slam_params_file': slam_params_file,
+            'use_sim_time': use_sim_time
+        }.items()
+    )
+
+    # 3. RViz2 để quan sát bản đồ quét trực tiếp
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        output='screen',
+        arguments=['--ros-args', '-p', 'use_sim_time:=true']
+    )
+
+    # 4. rosbridge WebSocket kết nối Web
+    rosbridge_launch = IncludeLaunchDescription(
+        AnyLaunchDescriptionSource([
+            os.path.join(rosbridge_share, 'launch', 'rosbridge_websocket_launch.xml')
+        ])
+    )
+
+    return LaunchDescription([
+        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        sim_launch,
+        slam_launch,
+        rviz_node,
+        rosbridge_launch
+    ])
+--------------------------------------------------
+FILE: src/my_bot/launch/sim.launch.py
+--------------------------------------------------
+import os
+
+from ament_index_python.packages import get_package_share_directory
+
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+
+    package_name = 'my_bot'
+
+    # 1. Gọi lại rsp.launch.py với use_sim_time = true
+    rsp = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory(package_name), 'launch', 'rsp.launch.py'
+            )
+        ]),
+        launch_arguments={'use_sim_time': 'true'}.items()
+    )
+
+    # Đường dẫn đến file world vừa tạo
+    world_path = os.path.join(
+        get_package_share_directory(package_name), 'worlds', 'obstacles.world'
+    )
+
+    # 2. Gọi Gazebo kèm file thế giới khu vườn và nhà kho
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py'
+            )
+        ]),
+        launch_arguments={'world': world_path}.items()
+    )
+
+  # 3. Node thả (spawn) robot vào đầu vườn
+    spawn_entity = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=['-topic', 'robot_description',
+                   '-entity', 'my_bot',
+                   '-x', '0.0',
+                   '-y', '-2.5',
+                   '-z', '0.1',
+                   '-Y', '1.5708'],
+        output='screen'
+    )
+
+    return LaunchDescription([
+        rsp,
+        gazebo,
+        spawn_entity,
+    ])
+--------------------------------------------------
+FILE: src/my_bot/maps/generate_map.py
+--------------------------------------------------
+#!/usr/bin/env python3
+import os
+import json
+import yaml
+import numpy as np
+from PIL import Image
+
+MAPS_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(MAPS_DIR, "active_farm.json")
+BASE_MAP_PGM = os.path.join(MAPS_DIR, "my_farm_map.pgm")
+BASE_MAP_YAML = os.path.join(MAPS_DIR, "my_farm_map.yaml")
+
+def main():
+    # 1. Kiểm tra cấu hình active_farm.json
+    if not os.path.exists(CONFIG_FILE):
+        print("[LỖI] Không tìm thấy active_farm.json! Vui lòng lưu cấu hình từ Web trước.")
+        return
+
+    with open(CONFIG_FILE, 'r') as f:
+        config = json.load(f)
+
+    if config.get("status") == "EMPTY":
+        print("[THÔNG BÁO] Cấu hình đang ở trạng thái EMPTY.")
+        print("-> Giữ nguyên bản đồ SLAM gốc, không đè thêm mô đất nào.")
+        return
+
+    # 2. Đọc file thông số bản đồ SLAM vừa quét
+    if not os.path.exists(BASE_MAP_PGM) or not os.path.exists(BASE_MAP_YAML):
+        print("[LỖI] Chưa có bản đồ SLAM gốc (my_farm_map.pgm / yaml)!")
+        print("-> Hãy chạy SLAM và lưu map trước bằng map_saver_cli.")
+        return
+
+    with open(BASE_MAP_YAML, 'r') as f:
+        map_metadata = yaml.safe_load(f)
+
+    resolution = float(map_metadata['resolution'])
+    origin = map_metadata['origin']
+    origin_x = float(origin[0])
+    origin_y = float(origin[1])
+
+    # Đọc ảnh map SLAM
+    base_img = Image.open(BASE_MAP_PGM).convert('L')
+    map_data = np.array(base_img)
+    height_px, width_px = map_data.shape
+
+    # Hàm chuyển tọa độ mét (world) sang tọa độ pixel trên ảnh
+    def world_to_pixel(x, y):
+        px = int((x - origin_x) / resolution)
+        py = int(height_px - 1 - (y - origin_y) / resolution)
+        return px, py
+
+    # 3. Trích xuất thông số người dùng nhập từ Web
+    num_beds = int(config['numBeds'])
+    bed_w = float(config['bedWidth'])
+    aisle_w = float(config['aisleWidth'])
+    first_bed_x = float(config['firstBedX'])
+    bed_start_y = float(config['bedStartY'])
+    bed_len = float(config['bedLength'])
+    bed_end_y = bed_start_y + bed_len
+
+    pitch = bed_w + aisle_w
+    print(f"[*] Đang xử lý: {num_beds} luống, rộng {bed_w}m, rãnh {aisle_w}m, chiều dài {bed_len}m")
+
+    # 4. Tính toán hình học và tô đen tuyệt đối (giá trị 0) cho từng mô đất
+    for i in range(num_beds):
+        cx = first_bed_x + i * pitch
+        x_min = cx - (bed_w / 2.0)
+        x_max = cx + (bed_w / 2.0)
+
+        px_start, py_bottom = world_to_pixel(x_min, bed_start_y)
+        px_end, py_top = world_to_pixel(x_max, bed_end_y)
+
+        # Chuẩn hóa khoảng pixel
+        x0 = max(0, min(px_start, px_end))
+        x1 = min(width_px, max(px_start, px_end))
+        y0 = max(0, min(py_top, py_bottom))
+        y1 = min(height_px, max(py_top, py_bottom))
+
+        # Đè màu đen (0 = vật cản) lên đúng vùng mô đất trên map SLAM
+        map_data[y0:y1, x0:x1] = 0
+        print(f"  + Luống #{i+1}: Tâm X = {cx:.2f}m -> Khóa pixel [{x0}:{x1}, {y0}:{y1}]")
+
+    # 5. Lưu đè lại ảnh PGM đã được bịt kín luống đất
+    result_img = Image.fromarray(map_data)
+    result_img.save(BASE_MAP_PGM)
+    print("[THÀNH CÔNG] Đã tích hợp các luống đất vào bản đồ SLAM thành công!")
+
+if __name__ == '__main__':
+    main()
+--------------------------------------------------
+FILE: src/my_bot/maps/my_farm_map.yaml
+--------------------------------------------------
+image: my_farm_map.pgm
+mode: trinary
+resolution: 0.05
+origin: [-6.7, -5.45, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.25
+--------------------------------------------------
+FILE: src/my_bot/worlds/obstacles.world
+--------------------------------------------------
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="default">
+    <!-- Ánh sáng và mặt đất -->
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- ====================================================
+         5 LUỐNG ĐẤT VÀ HÀNG CÂY (Khoảng cách tim luống 2.2m)
+         Mô đất: Rộng 0.8m, Dài 10m, Cao 0.1m (Lối đi lọt lòng 1.4m)
+         Cây: Trụ tròn cao 0.8m đặt trên đỉnh mô đất
+         ==================================================== -->
+
+    <!-- LUỐNG 1: X = -4.4m -->
+    <model name="bed_and_trees_1">
+      <static>true</static>
+      <link name="bed_1">
+        <pose>-4.4 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
+      </link>
+      <link name="t_1_1"><pose>-4.4 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_2"><pose>-4.4 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_3"><pose>-4.4 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_4"><pose>-4.4 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_5"><pose>-4.4 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_6"><pose>-4.4 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_7"><pose>-4.4 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_1_8"><pose>-4.4 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+    </model>
+
+    <!-- LUỐNG 2: X = -2.2m -->
+    <model name="bed_and_trees_2">
+      <static>true</static>
+      <link name="bed_2">
+        <pose>-2.2 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
+      </link>
+      <link name="t_2_1"><pose>-2.2 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_2"><pose>-2.2 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_3"><pose>-2.2 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_4"><pose>-2.2 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_5"><pose>-2.2 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_6"><pose>-2.2 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_7"><pose>-2.2 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_2_8"><pose>-2.2 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+    </model>
+
+    <!-- LUỐNG 3: X = 0.0m -->
+    <model name="bed_and_trees_3">
+      <static>true</static>
+      <link name="bed_3">
+        <pose>0.0 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
+      </link>
+      <link name="t_3_1"><pose>0.0 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_2"><pose>0.0 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_3"><pose>0.0 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_4"><pose>0.0 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_5"><pose>0.0 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_6"><pose>0.0 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_7"><pose>0.0 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_3_8"><pose>0.0 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+    </model>
+
+    <!-- LUỐNG 4: X = 2.2m -->
+    <model name="bed_and_trees_4">
+      <static>true</static>
+      <link name="bed_4">
+        <pose>2.2 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
+      </link>
+      <link name="t_4_1"><pose>2.2 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_2"><pose>2.2 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_3"><pose>2.2 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_4"><pose>2.2 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_5"><pose>2.2 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_6"><pose>2.2 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_7"><pose>2.2 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_4_8"><pose>2.2 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+    </model>
+
+    <!-- LUỐNG 5: X = 4.4m -->
+    <model name="bed_and_trees_5">
+      <static>true</static>
+      <link name="bed_5">
+        <pose>4.4 5.0 0.05 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.8 10.0 0.1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>0.8 10.0 0.1</size></box></geometry>
+          <material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Wood</name></script></material>
+        </visual>
+      </link>
+      <link name="t_5_1"><pose>4.4 1.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_2"><pose>4.4 2.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_3"><pose>4.4 3.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_4"><pose>4.4 4.6 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_5"><pose>4.4 5.8 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_6"><pose>4.4 7.0 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_7"><pose>4.4 8.2 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+      <link name="t_5_8"><pose>4.4 9.4 0.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry><material><script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/Green</name></script></material></visual></link>
+    </model>
+
+  </world>
+</sdf>
+--------------------------------------------------
+FILE: src/my_bot/urdf/imu.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- KHỚP NỐI VÀ VỊ TRÍ IMU BNO055 (Đặt ở trọng tâm trên thân xe) -->
+    <joint name="imu_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="imu_link"/>
+        <!-- Đặt tại giữa thân xe, hơi nhô lên bề mặt sàn xe một chút -->
+        <origin xyz="0.25 0 0.1" rpy="0 0 0"/>
+    </joint>
+
+    <link name="imu_link">
+        <visual>
+            <geometry>
+                <!-- Mô phỏng kích thước bo BNO055: 3.2cm x 2.7cm x 0.4cm -->
+                <box size="0.032 0.027 0.004"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.032 0.027 0.004"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="0.01" x="0.032" y="0.027" z="0.004">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+
+    <gazebo reference="imu_link">
+        <material>Gazebo/Black</material>
+        <sensor name="bno055_imu" type="imu">
+            <always_on>true</always_on>
+            <update_rate>50</update_rate>
+            <visualize>false</visualize>
+            <imu>
+                <angular_velocity>
+                    <x>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>0.002</stddev>
+                        </noise>
+                    </x>
+                    <y>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>0.002</stddev>
+                        </noise>
+                    </y>
+                    <z>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>0.002</stddev>
+                        </noise>
+                    </z>
+                </angular_velocity>
+                <linear_acceleration>
+                    <x>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>0.01</stddev>
+                        </noise>
+                    </x>
+                    <y>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>0.01</stddev>
+                        </noise>
+                    </y>
+                    <z>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+                            <stddev>0.01</stddev>
+                        </noise>
+                    </z>
+                </linear_acceleration>
+            </imu>
+            <plugin name="imu_controller" filename="libgazebo_ros_imu_sensor.so">
+                <ros>
+                    <argument>~/out:=imu/data</argument>
+                </ros>
+                <initial_orientation_as_reference>false</initial_orientation_as_reference>
+                <frame_name>imu_link</frame_name>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+</robot>
+--------------------------------------------------
+FILE: src/my_bot/urdf/lidar.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- KHỚP NỐI TRỤ ĐỠ THÁP (Cao 0.15m đặt trên nóc thân xe) -->
+    <!-- Nóc xe ở Z = 0.3m (gầm 0.1m + thân 0.2m), đặt trụ cao 0.15m lên nóc -->
+    <joint name="laser_tower_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="laser_tower"/>
+        <origin xyz="0.25 0 0.3" rpy="0 0 0"/>
+    </joint>
+
+    <link name="laser_tower">
+        <visual>
+            <origin xyz="0 0 0.075" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.02" length="0.15"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.075" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.02" length="0.15"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="0.2" length="0.15" radius="0.02">
+            <origin xyz="0 0 0.075" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="laser_tower">
+        <material>Gazebo/Black</material>
+    </gazebo>
+
+    <!-- KHỚP NỐI MẮT ĐỌC RPLIDAR C1 (Đặt trên đỉnh trụ tháp) -->
+    <joint name="laser_joint" type="fixed">
+        <parent link="laser_tower"/>
+        <child link="laser_frame"/>
+        <origin xyz="0 0 0.15" rpy="0 0 0"/>
+    </joint>
+
+    <link name="laser_frame">
+        <visual>
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.028" length="0.041"/>
+            </geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.028" length="0.041"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="0.11" length="0.041" radius="0.028">
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="laser_frame">
+        <material>Gazebo/Orange</material>
+
+        <sensor name="laser" type="ray">
+            <pose> 0 0 0.02 0 0 0 </pose>
+            
+            <visualize>true</visualize>
+            <update_rate>10</update_rate>
+            <ray>
+                <scan>
+                    <horizontal>
+                        <!-- 360 độ / 0.72 độ = 500 mẫu quét -->
+                        <samples>500</samples>
+                        <resolution>1</resolution>
+                        <min_angle>-3.14159265</min_angle>
+                        <max_angle>3.14159265</max_angle>
+                    </horizontal>
+                </scan>
+                <range>
+                    <!-- Thông số RPLIDAR C1: 0.05m đến 12.0m -->
+                    <min>0.05</min>
+                    <max>12.0</max>
+                    <resolution>0.013</resolution>
+                </range>
+            </ray>
+            <plugin name="laser_controller" filename="libgazebo_ros_ray_sensor.so">
+                <ros>
+                    <argument>~/out:=scan</argument>
+                </ros>
+                <output_type>sensor_msgs/LaserScan</output_type>
+                <frame_name>laser_frame</frame_name>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+</robot>
+--------------------------------------------------
+FILE: src/my_bot/urdf/camera.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <material name="silver">
+        <color rgba="0.75 0.75 0.75 1.0"/>
+    </material>
+    <material name="dark_grey">
+        <color rgba="0.2 0.2 0.2 1.0"/>
+    </material>
+
+    <!-- 1. CHÂN ĐẾ GIMBAL (Tiếp xúc trực tiếp nóc thùng xe tại Z = 0.30m) -->
+    <link name="camera_pan_base">
+        <visual>
+            <origin xyz="0 0 0.002" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.06 0.06 0.004"/>
+            </geometry>
+            <material name="silver"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.002" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.06 0.06 0.004"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="0.05" x="0.06" y="0.06" z="0.004">
+            <origin xyz="0 0 0.002" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+
+    <joint name="camera_pan_base_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="camera_pan_base"/>
+        <origin xyz="0.42 0 0.30" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="camera_pan_base">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+    <!-- 2. SERVO PAN (Khóa tạm fixed) -->
+    <link name="camera_pan_link">
+        <visual>
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.03 0.03 0.04"/>
+            </geometry>
+            <material name="dark_grey"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.03 0.03 0.04"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="0.05" x="0.03" y="0.03" z="0.04">
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+
+    <joint name="camera_pan_joint" type="revolute">
+        <parent link="camera_pan_base"/>
+        <child link="camera_pan_link"/>
+        <origin xyz="0 0 0.004" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-1.5708" upper="1.5708" effort="10.0" velocity="2.0"/>
+        <dynamics damping="10.0" friction="10.0"/>
+    </joint>
+    <gazebo reference="camera_pan_link">
+        <material>Gazebo/DarkGrey</material>
+    </gazebo>
+
+    <!-- 3. CÙM GÁ TILT (Chúc nhẹ 12 độ = 0.2094 rad để vừa thấy mũi xe vừa thấy luống) -->
+    <link name="camera_tilt_link">
+        <visual>
+            <origin xyz="0 0 0.015" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.035 0.04 0.03"/>
+            </geometry>
+            <material name="silver"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.015" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.035 0.04 0.03"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="0.05" x="0.035" y="0.04" z="0.03">
+            <origin xyz="0 0 0.015" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+
+    <joint name="camera_tilt_joint" type="revolute">
+        <parent link="camera_pan_link"/>
+        <child link="camera_tilt_link"/>
+        <origin xyz="0 0 0.04" rpy="0 0.2094 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-0.7854" upper="0.7854" effort="10.0" velocity="2.0"/>
+        <dynamics damping="10.0" friction="10.0"/>
+    </joint>
+    <gazebo reference="camera_tilt_link">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+
+    <!-- 4. BO MẠCH CAMERA & LENS (IMX296) -->
+    <link name="camera_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.0198 0.038 0.038"/>
+            </geometry>
+            <material name="dark_grey"/>
+        </visual>
+        <visual>
+            <origin xyz="0.015 0 0" rpy="0 1.5708 0"/>
+            <geometry>
+                <cylinder radius="0.012" length="0.025"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <origin xyz="0.01 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.03 0.038 0.038"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="0.034" x="0.038" y="0.038" z="0.0198">
+            <origin xyz="0.01 0 0" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+
+    <joint name="camera_joint" type="fixed">
+        <parent link="camera_tilt_link"/>
+        <child link="camera_link"/>
+        <origin xyz="0.02 0 0.015" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="camera_link">
+        <material>Gazebo/DarkGrey</material>
+    </gazebo>
+
+    <!-- 5. KHUNG QUANG HỌC CHUẨN ROS CHO GAZEBO SENSOR -->
+    <joint name="camera_optical_joint" type="fixed">
+        <parent link="camera_link"/>
+        <child link="camera_link_optical"/>
+        <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+
+    <link name="camera_link_optical"></link>
+
+    <gazebo reference="camera_link">
+        <sensor name="camera" type="camera">
+            <pose>0 0 0 0 0 0</pose>
+            <visualize>true</visualize>
+            <update_rate>30</update_rate>
+            <camera>
+                <horizontal_fov>1.089</horizontal_fov>
+                <image>
+                    <width>1456</width>
+                    <height>1088</height>
+                    <format>R8G8B8</format>
+                </image>
+                <clip>
+                    <near>0.05</near>
+                    <far>15.0</far>
+                </clip>
+            </camera>
+            <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+                <frame_name>camera_link_optical</frame_name>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+</robot>
+--------------------------------------------------
+FILE: src/my_bot/urdf/robot_core.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="inertial_macros.xacro"/>
+
+    <!-- COLOR DEFINITIONS -->
+    <material name="white">
+        <color rgba="1 1 1 1" />
+    </material>
+
+    <material name="orange">
+        <color rgba="1 0.3 0.1 1"/>
+    </material>
+
+    <material name="blue">
+        <color rgba="0.2 0.2 1 1"/>
+    </material>
+
+    <material name="black">
+        <color rgba="0 0 0 1"/>
+    </material>
+
+    <material name="grey">
+        <color rgba="0.5 0.5 0.5 1"/>
+    </material>
+
+    <!-- BASE LINK (Tam truc 2 banh chu dong tren mat dat) -->
+    <link name="base_link">
+    </link>
+
+    <!-- BASE FOOTPRINT -->
+    <joint name="base_footprint_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="base_footprint"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="base_footprint">
+    </link>
+
+    <!-- CHASSIS LINK (Gam cach dat 0.1m, Than xe Cao 0.2m -> Tam o Z = 0.2m) -->
+    <joint name="chassis_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="chassis"/>
+        <origin xyz="-0.1 0 0"/>
+    </joint>
+
+    <link name="chassis">
+        <visual>
+            <origin xyz="0.25 0 0.2"/>
+            <geometry>
+                <box size="0.5 0.45 0.2"/>
+            </geometry>
+            <material name="white"/>
+        </visual>
+        <collision>
+            <origin xyz="0.25 0 0.2"/>
+            <geometry>
+                <box size="0.5 0.45 0.2"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="10.0" x="0.5" y="0.45" z="0.2">
+            <origin xyz="0.25 0 0.2" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+
+    <gazebo reference="chassis">
+        <material>Gazebo/White</material>
+    </gazebo>
+
+    <!-- LEFT WHEEL LINK (Ban kinh 0.155m, Do day 0.05m) -->
+    <joint name="left_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="left_wheel"/>
+        <origin xyz="0 0.25 0.155" rpy="-${pi/2} 0 0" />
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="left_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.155" length="0.05"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.155" length="0.05"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="1.5" length="0.05" radius="0.155">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="left_wheel">
+        <material>Gazebo/Blue</material>
+    </gazebo>
+
+    <!-- RIGHT WHEEL LINK (Ban kinh 0.155m, Do day 0.05m) -->
+    <joint name="right_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+        <origin xyz="0 -0.25 0.155" rpy="${pi/2} 0 0" />
+        <axis xyz="0 0 -1"/>
+    </joint>
+
+    <link name="right_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.155" length="0.05"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder radius="0.155" length="0.05"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="1.5" length="0.05" radius="0.155">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="right_wheel">
+        <material>Gazebo/Blue</material>
+    </gazebo>
+
+    <!-- ==================== FRONT LEFT SWIVEL CASTER ==================== -->
+    <!-- Khop xoay co banh quanh truc Z -->
+    <joint name="fl_caster_swivel_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="fl_caster_swivel"/>
+        <origin xyz="0.45 0.18 0.1" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="fl_caster_swivel">
+        <visual>
+            <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.05"/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.05"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="0.2" length="0.05" radius="0.03">
+            <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <!-- Khop quay banh xe lan quanh truc Y -->
+    <joint name="fl_caster_wheel_joint" type="fixed">
+        <parent link="fl_caster_swivel"/>
+        <child link="fl_caster_wheel"/>
+        <origin xyz="-0.03 0 -0.05" rpy="-${pi/2} 0 0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="fl_caster_wheel">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.025"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.025"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="0.3" length="0.025" radius="0.05">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="fl_caster_swivel">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+    <gazebo reference="fl_caster_wheel">
+        <material>Gazebo/Black</material>
+        <mu1 value="0.1"/>
+        <mu2 value="0.1"/>
+    </gazebo>
+
+    <!-- ==================== FRONT RIGHT SWIVEL CASTER ==================== -->
+    <!-- Khop xoay co banh quanh truc Z -->
+    <joint name="fr_caster_swivel_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="fr_caster_swivel"/>
+        <origin xyz="0.45 -0.18 0.1" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="fr_caster_swivel">
+        <visual>
+            <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.05"/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.05"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="0.2" length="0.05" radius="0.03">
+            <origin xyz="0 0 -0.025" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <!-- Khop quay banh xe lan quanh truc Y -->
+    <joint name="fr_caster_wheel_joint" type="fixed">
+        <parent link="fr_caster_swivel"/>
+        <child link="fr_caster_wheel"/>
+        <origin xyz="-0.03 0 -0.05" rpy="-${pi/2} 0 0"/>
+        <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="fr_caster_wheel">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.025"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.025"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="0.3" length="0.025" radius="0.05">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="fr_caster_swivel">
+        <material>Gazebo/Grey</material>
+    </gazebo>
+    <gazebo reference="fr_caster_wheel">
+        <material>Gazebo/Black</material>
+        <mu1 value="0.1"/>
+        <mu2 value="0.1"/>
+    </gazebo>
+
+</robot>
+--------------------------------------------------
+FILE: src/my_bot/urdf/gazebo_control.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <gazebo>
+        <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+
+            <!-- Wheel Information -->
+            <left_joint>left_wheel_joint</left_joint>
+            <right_joint>right_wheel_joint</right_joint>
+            <wheel_separation>0.5</wheel_separation>
+            <wheel_diameter>0.31</wheel_diameter>
+
+            <!-- Limits -->
+            <max_wheel_torque>200</max_wheel_torque>
+            <max_wheel_acceleration>10.0</max_wheel_acceleration>
+
+            <!-- Output -->
+            <odometry_frame>odom</odometry_frame>
+            <robot_base_frame>base_link</robot_base_frame>
+
+            <publish_odom>true</publish_odom>
+            <publish_odom_tf>true</publish_odom_tf>
+            <publish_wheel_tf>true</publish_wheel_tf>
+
+        </plugin>
+    </gazebo>
+
+</robot>
+
+--------------------------------------------------
+FILE: src/my_bot/urdf/inertial_macros.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <!-- Specify some standard inertial calculations https://en.wikipedia.org/wiki/List_of_moments_of_inertia -->
+    <!-- These make use of xacro's mathematical functionality -->
+
+    <xacro:macro name="inertial_sphere" params="mass radius *origin">
+        <inertial>
+            <xacro:insert_block name="origin"/>
+            <mass value="${mass}" />
+            <inertia ixx="${(2/5) * mass * (radius*radius)}" ixy="0.0" ixz="0.0"
+                    iyy="${(2/5) * mass * (radius*radius)}" iyz="0.0"
+                    izz="${(2/5) * mass * (radius*radius)}" />
+        </inertial>
+    </xacro:macro>  
+
+
+    <xacro:macro name="inertial_box" params="mass x y z *origin">
+        <inertial>
+            <xacro:insert_block name="origin"/>
+            <mass value="${mass}" />
+            <inertia ixx="${(1/12) * mass * (y*y+z*z)}" ixy="0.0" ixz="0.0"
+                    iyy="${(1/12) * mass * (x*x+z*z)}" iyz="0.0"
+                    izz="${(1/12) * mass * (x*x+y*y)}" />
+        </inertial>
+    </xacro:macro>
+
+
+    <xacro:macro name="inertial_cylinder" params="mass length radius *origin">
+        <inertial>
+            <xacro:insert_block name="origin"/>
+            <mass value="${mass}" />
+            <inertia ixx="${(1/12) * mass * (3*radius*radius + length*length)}" ixy="0.0" ixz="0.0"
+                    iyy="${(1/12) * mass * (3*radius*radius + length*length)}" iyz="0.0"
+                    izz="${(1/2) * mass * (radius*radius)}" />
+        </inertial>
+    </xacro:macro>
+
+
+</robot>
+--------------------------------------------------
+FILE: src/my_bot/urdf/robot.urdf.xacro
+--------------------------------------------------
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot">
+
+    <xacro:include filename="robot_core.xacro" />
+    <xacro:include filename="gazebo_control.xacro" />
+    <xacro:include filename="lidar.xacro" />
+    <xacro:include filename="imu.xacro" />
+    <xacro:include filename="camera.xacro" />
+</robot>
+--------------------------------------------------
+FILE: src/my_bot/setup.py
+--------------------------------------------------
+import os
+from glob import glob
+from setuptools import find_packages, setup
+
+package_name = 'my_bot'
+
+setup(
+    name=package_name,
+    version='0.0.0',
+    packages=find_packages(exclude=['test']),
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'urdf'), glob('urdf/*.xacro')),
+        (os.path.join('share', package_name, 'worlds'), glob('worlds/*.world')),
+        (os.path.join('share', package_name, 'config'), glob('config/*')),
+        (os.path.join('share', package_name, 'maps'), glob('maps/*')),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='heo',
+    maintainer_email='heo@todo.todo',
+    description='Mobile robot package',
+    license='TODO: License declaration',
+    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'row_detector = my_bot.row_detector:main',
+            'farm_manager = my_bot.farm_manager:main',
+        ],
+    },
+)
+--------------------------------------------------
+FILE: src/my_bot/config/mapper_params_online_async.yaml
+--------------------------------------------------
+slam_toolbox:
+  ros__parameters:
+
+    # Plugin và Frame chuẩn
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # Khung toạ độ
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    use_map_saver: true
+    mode: mapping
+
+    # Thông số Laser (Khớp với RPLIDAR C1)
+    debug_logging: false
+    throttle_scans: 1
+    transform_publish_period: 0.02 # 50Hz
+    map_update_interval: 1.0
+    resolution: 0.05
+    max_laser_range: 8.0 # Tầm quét RPLIDAR C1
+    minimum_time_interval: 0.2
+    transform_timeout: 0.2
+    tf_buffer_duration: 30.
+    stack_size_to_use: 40000000
+    enable_interactive_mode: true
+
+    # Điều kiện cập nhật vị trí khi robot di chuyển
+    minimum_travel_distance: 0.3
+    minimum_travel_heading: 0.3
+    scan_buffer_size: 10
+    scan_buffer_maximum_scan_distance: 12.0
+    link_match_minimum_response_fine: 0.1  
+    link_scan_maximum_distance: 1.5
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: false 
+    loop_match_minimum_chain_size: 10           
+    loop_match_maximum_variance_coarse: 3.0  
+    loop_match_minimum_response_coarse: 0.35    
+    loop_match_minimum_response_fine: 0.45
+
+    # Tương quan bản đồ
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1 
+
+    # Tối ưu hóa vòng lặp
+    loop_search_space_dimension: 8.0
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+
+    # Giới hạn kích thước bộ nhớ bản đồ
+    scan_matcher:
+      distance_variance_penalty: 0.04      
+      angle_variance_penalty: 0.3    
+      fine_search_angle_offset: 0.00349     
+      coarse_search_angle_offset: 0.349   
+      coarse_angle_resolution: 0.0349        
+      minimum_angle_penalty: 0.9
+      minimum_distance_penalty: 0.5
+      use_response_expansion: true
+--------------------------------------------------
+FILE: src/my_bot/config/nav2_params.yaml
+--------------------------------------------------
+amcl:
+  ros__parameters:
+    use_sim_time: True
+amcl:
+  ros__parameters:
+    use_sim_time: True
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: -2.5
+      z: 0.0
+      yaw: 1.5708
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_footprint"
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    do_beamskip: false
+    global_frame_id: "map"
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 100.0
+    laser_min_range: -1.0
+    laser_model_type: "likelihood_field"
+    max_beams: 60
+    max_particles: 2000
+    min_particles: 500
+    odom_frame_id: "odom"
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_fast: 0.0
+    recovery_alpha_slow: 0.0
+    resample_interval: 1
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
+    save_pose_rate: 0.5
+    sigma_hit: 0.2
+    tf_broadcast: true
+    transform_tolerance: 1.0
+    update_min_a: 0.2
+    update_min_d: 0.25
+    z_hit: 0.5
+    z_max: 0.05
+    z_rand: 0.5
+    z_short: 0.05
+    scan_topic: scan
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: True
+    global_frame: map
+    robot_base_frame: base_link
+    odom_topic: /odom
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    # 'default_nav_through_poses_bt_xml' and 'default_nav_to_pose_bt_xml' are use defaults:
+    # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
+    # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
+    # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
+    plugin_lib_names:
+      - nav2_compute_path_to_pose_action_bt_node
+      - nav2_compute_path_through_poses_action_bt_node
+      - nav2_smooth_path_action_bt_node
+      - nav2_follow_path_action_bt_node
+      - nav2_spin_action_bt_node
+      - nav2_wait_action_bt_node
+      - nav2_assisted_teleop_action_bt_node
+      - nav2_back_up_action_bt_node
+      - nav2_drive_on_heading_bt_node
+      - nav2_clear_costmap_service_bt_node
+      - nav2_is_stuck_condition_bt_node
+      - nav2_goal_reached_condition_bt_node
+      - nav2_goal_updated_condition_bt_node
+      - nav2_globally_updated_goal_condition_bt_node
+      - nav2_is_path_valid_condition_bt_node
+      - nav2_initial_pose_received_condition_bt_node
+      - nav2_reinitialize_global_localization_service_bt_node
+      - nav2_rate_controller_bt_node
+      - nav2_distance_controller_bt_node
+      - nav2_speed_controller_bt_node
+      - nav2_truncate_path_action_bt_node
+      - nav2_truncate_path_local_action_bt_node
+      - nav2_goal_updater_node_bt_node
+      - nav2_recovery_node_bt_node
+      - nav2_pipeline_sequence_bt_node
+      - nav2_round_robin_node_bt_node
+      - nav2_transform_available_condition_bt_node
+      - nav2_time_expired_condition_bt_node
+      - nav2_path_expiring_timer_condition
+      - nav2_distance_traveled_condition_bt_node
+      - nav2_single_trigger_bt_node
+      - nav2_goal_updated_controller_bt_node
+      - nav2_is_battery_low_condition_bt_node
+      - nav2_navigate_through_poses_action_bt_node
+      - nav2_navigate_to_pose_action_bt_node
+      - nav2_remove_passed_goals_action_bt_node
+      - nav2_planner_selector_bt_node
+      - nav2_controller_selector_bt_node
+      - nav2_goal_checker_selector_bt_node
+      - nav2_controller_cancel_bt_node
+      - nav2_path_longer_on_approach_bt_node
+      - nav2_wait_cancel_bt_node
+      - nav2_spin_cancel_bt_node
+      - nav2_back_up_cancel_bt_node
+      - nav2_assisted_teleop_cancel_bt_node
+      - nav2_drive_on_heading_cancel_bt_node
+      - nav2_is_battery_charging_condition_bt_node
+
+bt_navigator_navigate_through_poses_rclcpp_node:
+  ros__parameters:
+    use_sim_time: True
+
+bt_navigator_navigate_to_pose_rclcpp_node:
+  ros__parameters:
+    use_sim_time: True
+
+controller_server:
+  ros__parameters:
+    use_sim_time: True
+    cmd_vel_topic: /cmd_vel_nav
+    controller_frequency: 20.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
+    controller_plugins: ["FollowPath"]
+
+    # Progress checker parameters
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+    # Goal checker parameters
+    #precise_goal_checker:
+    #  plugin: "nav2_controller::SimpleGoalChecker"
+    #  xy_goal_tolerance: 0.25
+    #  yaw_goal_tolerance: 0.25
+    #  stateful: True
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+    # DWB parameters
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      min_vel_x: 0.0
+      min_vel_y: 0.0
+      max_vel_x: 0.26
+      max_vel_y: 0.0
+      max_vel_theta: 1.0
+      min_speed_xy: 0.0
+      max_speed_xy: 0.26
+      min_speed_theta: 0.0
+      # Add high threshold velocity for turtlebot 3 issue.
+      # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
+      acc_lim_x: 2.5
+      acc_lim_y: 0.0
+      acc_lim_theta: 3.2
+      decel_lim_x: -2.5
+      decel_lim_y: 0.0
+      decel_lim_theta: -3.2
+      vx_samples: 20
+      vy_samples: 5
+      vtheta_samples: 20
+      sim_time: 1.7
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      transform_tolerance: 0.2
+      xy_goal_tolerance: 0.25
+      trans_stopped_velocity: 0.25
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 32.0
+      PathAlign.forward_point_distance: 0.1
+      GoalAlign.scale: 24.0
+      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_link
+      use_sim_time: True
+      rolling_window: true
+      width: 3
+      height: 3
+      resolution: 0.05
+      footprint: "[ [0.35, 0.28], [0.35, -0.28], [-0.3, -0.28], [-0.3, 0.28] ]"
+      plugins: ["voxel_layer", "inflation_layer"]
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.5
+        inflation_radius: 0.75
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
+        enabled: True
+        publish_voxel_map: True
+        origin_z: 0.0
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 3.5
+          obstacle_min_range: 0.0
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      always_send_full_costmap: True
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_link
+      use_sim_time: True
+      footprint: "[ [0.35, 0.28], [0.35, -0.28], [-0.3, -0.28], [-0.3, 0.28] ]"
+      resolution: 0.05
+      track_unknown_space: true
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 3.5
+          obstacle_min_range: 0.0
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.5
+        inflation_radius: 0.75
+      always_send_full_costmap: True
+
+map_server:
+  ros__parameters:
+    use_sim_time: True
+    # Overridden in launch by the "map" launch configuration or provided default value.
+    # To use in yaml, remove the default "map" value in the tb3_simulation_launch.py file & provide full path to map below.
+    yaml_filename: ""
+
+map_saver:
+  ros__parameters:
+    use_sim_time: True
+    save_map_timeout: 5.0
+    free_thresh_default: 0.25
+    occupied_thresh_default: 0.65
+    map_subscribe_transient_local: True
+
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 20.0
+    use_sim_time: True
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner/NavfnPlanner"
+      tolerance: 0.5
+      use_astar: false
+      allow_unknown: true
+
+smoother_server:
+  ros__parameters:
+    use_sim_time: True
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: True
+
+behavior_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    assisted_teleop:
+      plugin: "nav2_behaviors/AssistedTeleop"
+    global_frame: odom
+    robot_base_frame: base_link
+    transform_tolerance: 0.1
+    use_sim_time: true
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 3.2
+
+robot_state_publisher:
+  ros__parameters:
+    use_sim_time: True
+
+waypoint_follower:
+  ros__parameters:
+    use_sim_time: True
+    loop_rate: 20
+    stop_on_failure: false
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 200
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: True
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.26, 0.0, 1.0]
+    min_velocity: [-0.26, 0.0, -1.0]
+    max_accel: [2.5, 0.0, 3.2]
+    max_decel: [-2.5, 0.0, -3.2]
+    odom_topic: "odom"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+
+--------------------------------------------------
+FILE: src/my_bot/test/test_flake8.py
+--------------------------------------------------
+# Copyright 2017 Open Source Robotics Foundation, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from ament_flake8.main import main_with_errors
+import pytest
+
+
+@pytest.mark.flake8
+@pytest.mark.linter
+def test_flake8():
+    rc, errors = main_with_errors(argv=[])
+    assert rc == 0, \
+        'Found %d code style errors / warnings:\n' % len(errors) + \
+        '\n'.join(errors)
+
+--------------------------------------------------
+FILE: src/my_bot/test/test_copyright.py
+--------------------------------------------------
+# Copyright 2015 Open Source Robotics Foundation, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from ament_copyright.main import main
+import pytest
+
+
+# Remove the `skip` decorator once the source file(s) have a copyright header
+@pytest.mark.skip(reason='No copyright header has been placed in the generated source file.')
+@pytest.mark.copyright
+@pytest.mark.linter
+def test_copyright():
+    rc = main(argv=['.', 'test'])
+    assert rc == 0, 'Found errors'
+
+--------------------------------------------------
+FILE: src/my_bot/test/test_pep257.py
+--------------------------------------------------
+# Copyright 2015 Open Source Robotics Foundation, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from ament_pep257.main import main
+import pytest
+
+
+@pytest.mark.linter
+@pytest.mark.pep257
+def test_pep257():
+    rc = main(argv=['.', 'test'])
+    assert rc == 0, 'Found code style errors / warnings'
+
+--------------------------------------------------
+FILE: src/hmmm/index.html
+--------------------------------------------------
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trạm Điều Khiển Lộ Trình Nông Nghiệp</title>
+    <script src="https://cdn.jsdelivr.net/npm/easeljs@1/lib/easeljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eventemitter2@6/lib/eventemitter2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ros2d@0/build/ros2d.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 15px; background-color: #f4f6f8; text-align: center; }
+        #status { font-weight: bold; color: red; margin-bottom: 12px; font-size: 1.05rem; }
+        .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 15px; flex-wrap: wrap; }
+        #map-box { border: 2px solid #222; background-color: #7f7f7f; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: inline-block; cursor: crosshair; }
+        .panel { background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; box-sizing: border-box; }
+        .control-panel { width: 340px; }
+        .config-panel { width: 320px; }
+        
+        .form-group { margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; }
+        .form-group label { font-size: 0.83rem; color: #333; max-width: 195px; font-weight: 500; }
+        .form-group input { width: 85px; padding: 4px 6px; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
+        
+        .btn-action { width: 100%; height: 38px; font-size: 13px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px; margin-bottom: 8px; color: white; transition: 0.1s; }
+        .btn-action:active { transform: scale(0.98); }
+        .btn-start { background-color: #28a745; }
+        .btn-undo { background-color: #ffc107; color: #222 !important; }
+        .btn-clear { background-color: #6c757d; }
+        .btn-estop { background-color: #dc3545; height: 46px; font-size: 15px; letter-spacing: 1px; box-shadow: 0 3px 6px rgba(220,53,69,0.4); }
+        .btn-save-robot { background-color: #007bff; }
+        .btn-new-farm { background-color: #dc3545; font-size: 12px; height: 34px; }
+        
+        .btn-grid { display: grid; grid-template-columns: 75px 75px 75px; grid-gap: 8px; justify-content: center; margin-top: 8px; }
+        .btn-move { height: 44px; font-size: 13px; font-weight: bold; border: none; border-radius: 6px; background-color: #007bff; color: white; cursor: pointer; }
+        .btn-stop { background-color: #dc3545; }
+        .info-box { background-color: #eef2f7; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #333; line-height: 1.4; }
+        #waypoints-list { max-height: 95px; overflow-y: auto; padding-left: 20px; margin: 4px 0; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <h2>TRẠM ĐIỀU KHIỂN & CHẤM LỘ TRÌNH ROBOT</h2>
+    <div id="status">Trạng thái: Đang kết nối ROS...</div>
+    
+    <div class="main-container">
+        <!-- Khung Map Canvas -->
+        <div>
+            <div id="map-box"></div>
+            <p style="font-size: 0.85rem; color: #555; margin-top: 6px;">
+                💡 <b>Hướng dẫn:</b> Click liên tiếp trên rãnh đi để tạo lộ trình P1, P2... Xem chi tiết trên <b>RViz2</b>.
+            </p>
+        </div>
+
+        <!-- Bảng Cấu Hình Vườn -->
+        <div class="panel config-panel">
+            <h3 style="margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 6px; font-size: 1.05rem;">Thông Số Mảnh Vườn</h3>
+            <div class="form-group">
+                <label>Tên mảnh vườn:</label>
+                <input type="text" id="cfg-farm-name" value="Khu_A" style="width: 105px; text-align: left;">
+            </div>
+            <div class="form-group">
+                <label>Số luống trồng:</label>
+                <input type="number" id="cfg-num-beds" value="">
+            </div>
+            <div class="form-group">
+                <label>Bề rộng một luống (m):</label>
+                <input type="number" id="cfg-bed-width" value="" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Bề rộng rãnh xe chạy (m):</label>
+                <input type="number" id="cfg-aisle-width" value="" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Vị trí luống đầu tiên X (m):</label>
+                <input type="number" id="cfg-first-bed-x" value="" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Vị trí đầu hàng cây Y (m):</label>
+                <input type="number" id="cfg-bed-start-y" value="" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Chiều dài của luống (m):</label>
+                <input type="number" id="cfg-bed-length" value="" step="0.5">
+            </div>
+
+            <button class="btn-action btn-save-robot" onclick="saveConfigToRobot()">LƯU CẤU HÌNH VÀO ROBOT</button>
+            <button class="btn-action btn-new-farm" onclick="createNewFarm()">🗑 TẠO KHU VỰC MỚI (XÓA TRẮNG TOÀN BỘ)</button>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+            <button class="btn-action" style="background-color: #17a2b8;" onclick="exportFarmConfig()">XUẤT BẢN SAO LƯU (JSON)</button>
+            <input type="file" id="import-file" style="display: none;" onchange="importFarmConfig(event)">
+            <button class="btn-action" style="background-color: #6c757d;" onclick="document.getElementById('import-file').click()">NHẬP BẢN SAO LƯU (JSON)</button>
+        </div>
+
+        <!-- Bảng Điều Khiển Lộ Trình & Lái Tay -->
+        <div class="panel control-panel">
+            <button class="btn-action btn-estop" onclick="triggerEmergencyStop()">🛑 DỪNG KHẨN CẤP (E-STOP)</button>
+
+            <h3 style="margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 4px; font-size: 1.05rem;">Lộ Trình Tự Hành</h3>
+            <div class="info-box">
+                <div><b>Trạng thái:</b> <span id="mission-status">Chờ tạo điểm</span></div>
+                <ol id="waypoints-list"></ol>
+            </div>
+            <div style="margin-top: 8px;">
+                <button class="btn-action btn-start" onclick="sendWaypointsMission()">BẮT ĐẦU CHẠY LỘ TRÌNH</button>
+                <button class="btn-action btn-undo" onclick="undoLastWaypoint()">↩ HOÀN TÁC (XÓA ĐIỂM VỪA BẤM)</button>
+                <button class="btn-clear btn-action" onclick="clearWaypoints()">XÓA HẾT LỘ TRÌNH</button>
+            </div>
+
+            <h3 style="margin-top: 10px; border-bottom: 2px solid #eee; padding-bottom: 4px; font-size: 1.05rem;">Lái Thủ Công</h3>
+            <div class="btn-grid">
+                <div></div>
+                <button class="btn-move" onclick="sendCmd(0.3, 0.0)">TIẾN</button>
+                <div></div>
+                <button class="btn-move" onclick="sendCmd(0.0, 0.8)">TRÁI</button>
+                <button class="btn-move btn-stop" onclick="sendCmd(0.0, 0.0)">DỪNG</button>
+                <button class="btn-move" onclick="sendCmd(0.0, -0.8)">PHẢI</button>
+                <div></div>
+                <button class="btn-move" onclick="sendCmd(-0.3, 0.0)">LÙI</button>
+                <div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Quản lý Cache Thông Số (localStorage)
+        function fillForm(cfg) {
+            if (!cfg || cfg.status === "EMPTY") {
+                clearFormInputs();
+                return;
+            }
+            if (cfg.farmName !== undefined) document.getElementById('cfg-farm-name').value = cfg.farmName;
+            if (cfg.numBeds !== undefined) document.getElementById('cfg-num-beds').value = cfg.numBeds;
+            if (cfg.bedWidth !== undefined) document.getElementById('cfg-bed-width').value = cfg.bedWidth;
+            if (cfg.aisleWidth !== undefined) document.getElementById('cfg-aisle-width').value = cfg.aisleWidth;
+            if (cfg.firstBedX !== undefined) document.getElementById('cfg-first-bed-x').value = cfg.firstBedX;
+            if (cfg.bedStartY !== undefined) document.getElementById('cfg-bed-start-y').value = cfg.bedStartY;
+            if (cfg.bedLength !== undefined) document.getElementById('cfg-bed-length').value = cfg.bedLength;
+        }
+
+        function clearFormInputs() {
+            document.getElementById('cfg-farm-name').value = "Khu_Moi";
+            document.getElementById('cfg-num-beds').value = "";
+            document.getElementById('cfg-bed-width').value = "";
+            document.getElementById('cfg-aisle-width').value = "";
+            document.getElementById('cfg-first-bed-x').value = "";
+            document.getElementById('cfg-bed-start-y').value = "";
+            document.getElementById('cfg-bed-length').value = "";
+        }
+
+        try {
+            const cached = localStorage.getItem('last_active_farm_config');
+            if (cached) fillForm(JSON.parse(cached));
+        } catch(e) {}
+
+        // 2. Kết nối ROSBridge
+        const ros = new ROSLIB.Ros({ url: 'ws://localhost:9090' });
+        const statusText = document.getElementById('status');
+        const missionStatus = document.getElementById('mission-status');
+        const waypointsListEl = document.getElementById('waypoints-list');
+
+        const requestConfigPub = new ROSLIB.Topic({ ros: ros, name: '/farm_config/request', messageType: 'std_msgs/msg/Empty' });
+
+        ros.on('connection', () => {
+            statusText.innerText = 'Trạng thái: Đã kết nối ROS thành công (Port 9090)';
+            statusText.style.color = 'green';
+            initMapClient();
+            requestConfigPub.publish(new ROSLIB.Message({}));
+        });
+        ros.on('error', () => { statusText.innerText = 'Trạng thái: Lỗi kết nối!'; statusText.style.color = 'red'; });
+        ros.on('close', () => { statusText.innerText = 'Trạng thái: Mất kết nối tới ROS!'; statusText.style.color = 'red'; });
+
+        // 3. Topics & Services Điều Khiển
+        const cmdVel = new ROSLIB.Topic({ ros: ros, name: '/cmd_vel', messageType: 'geometry_msgs/msg/Twist' });
+        const goalTopic = new ROSLIB.Topic({ ros: ros, name: '/goal_pose', messageType: 'geometry_msgs/msg/PoseStamped' });
+
+        const cancelNav2Client = new ROSLIB.Service({
+            ros: ros,
+            name: '/navigate_to_pose/_action/cancel_goal',
+            serviceType: 'action_msgs/srv/CancelGoal'
+        });
+
+        function sendCmd(linearX, angularZ) {
+            cmdVel.publish(new ROSLIB.Message({
+                linear: { x: linearX, y: 0.0, z: 0.0 },
+                angular: { x: 0.0, y: 0.0, z: angularZ }
+            }));
+        }
+
+        function triggerEmergencyStop() {
+            isMissionRunning = false;
+            missionStatus.innerText = "🛑 ĐÃ DỪNG KHẨN CẤP!";
+            missionStatus.style.color = "red";
+
+            try {
+                cancelNav2Client.callService(new ROSLIB.ServiceRequest({
+                    goal_info: { goal_id: { uuid: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] } }
+                }), () => {});
+            } catch(e) {}
+
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => sendCmd(0.0, 0.0), i * 50);
+            }
+            alert("Đã phanh dừng khẩn cấp và hủy mục tiêu Nav2!");
+        }
+
+        // 4. Khung Bản Đồ Canvas ROS2D
+        const viewer = new ROS2D.Viewer({ divID: 'map-box', width: 480, height: 480 });
+        let gridClient = null;
+        const mapContainer = new createjs.Container();
+        const waypointsContainer = new createjs.Container();
+        const robotMarker = new createjs.Container();
+
+        const robotShape = new createjs.Shape();
+        robotShape.graphics.beginFill("#007bff").moveTo(0.3, 0).lineTo(-0.2, -0.2).lineTo(-0.1, 0).lineTo(-0.2, 0.2).closePath();
+        robotMarker.addChild(robotShape);
+        robotMarker.visible = false;
+
+        viewer.scene.addChild(mapContainer);
+        viewer.scene.addChild(waypointsContainer);
+        viewer.scene.addChild(robotMarker);
+
+        function initMapClient() {
+            if (gridClient) return;
+            gridClient = new ROS2D.OccupancyGridClient({ ros: ros, rootObject: mapContainer, continuous: true });
+            gridClient.on('change', () => {
+                viewer.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
+                viewer.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+            });
+        }
+
+        // Đọc AMCL Pose
+        const poseSub = new ROSLIB.Topic({ ros: ros, name: '/amcl_pose', messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped' });
+        let currentRobotPose = null;
+        let robotYaw = 0.0;
+
+        poseSub.subscribe((msg) => {
+            const pos = msg.pose.pose.position;
+            const q = msg.pose.pose.orientation;
+            currentRobotPose = { x: pos.x, y: pos.y };
+
+            const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+            const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+            robotYaw = Math.atan2(siny_cosp, cosy_cosp);
+
+            robotMarker.x = currentRobotPose.x;
+            robotMarker.y = -currentRobotPose.y;
+            robotMarker.rotation = -robotYaw * (180 / Math.PI);
+            robotMarker.visible = true;
+        });
+
+        // 5. Quản Lý Danh Sách Waypoints & Chặn Click Pixel Màu Đen
+        let waypoints = [];
+
+        function isClickOnBlackPixel(canvasX, canvasY) {
+            const canvasEl = document.querySelector('#map-box canvas');
+            if (!canvasEl) return false;
+            const ctx = canvasEl.getContext('2d');
+            if (!ctx) return false;
+
+            // Đọc màu RGBA của pixel tại tọa độ click
+            const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data;
+            const r = pixel[0];
+            const g = pixel[1];
+            const b = pixel[2];
+            const a = pixel[3];
+
+            // Nếu pixel màu đen/tối (vật cản / luống đất: R, G, B đều < 60)
+            if (a > 50 && r < 60 && g < 60 && b < 60) {
+                return true;
+            }
+            return false;
+        }
+
+        viewer.scene.addEventListener('stagemousedown', (event) => {
+            const canvasX = Math.round(event.stageX);
+            const canvasY = Math.round(event.stageY);
+
+            // Kiểm tra màu pixel trực tiếp trên màn hình
+            if (isClickOnBlackPixel(canvasX, canvasY)) {
+                missionStatus.innerText = "⚠️ Không thể chấm vào luống trồng hoặc vật cản màu đen!";
+                missionStatus.style.color = "#dc3545";
+                setTimeout(() => {
+                    if (missionStatus.innerText.includes("Không thể")) {
+                        missionStatus.innerText = `${waypoints.length} điểm đã chọn`;
+                        missionStatus.style.color = "#333";
+                    }
+                }, 2000);
+                return;
+            }
+
+            const stagePos = viewer.scene.globalToLocal(event.stageX, event.stageY);
+            waypoints.push({ x: stagePos.x, y: -stagePos.y });
+            renderWaypoints();
+        });
+
+        function undoLastWaypoint() {
+            if (waypoints.length === 0) return;
+            waypoints.pop();
+            renderWaypoints();
+        }
+
+        function clearWaypoints() {
+            waypoints = [];
+            isMissionRunning = false;
+            try {
+                cancelNav2Client.callService(new ROSLIB.ServiceRequest({
+                    goal_info: { goal_id: { uuid: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] } }
+                }), () => {});
+            } catch(e) {}
+            sendCmd(0.0, 0.0);
+            renderWaypoints();
+            missionStatus.innerText = "Chờ tạo điểm";
+            missionStatus.style.color = "#333";
+        }
+
+        function renderWaypoints() {
+            waypointsContainer.removeAllChildren();
+            waypointsListEl.innerHTML = '';
+            missionStatus.innerText = `${waypoints.length} điểm đã chọn`;
+            missionStatus.style.color = "#333";
+
+            const pathLine = new createjs.Shape();
+            pathLine.graphics.setStrokeStyle(0.04).beginStroke("#28a745");
+
+            waypoints.forEach((pt, idx) => {
+                if (idx === 0) pathLine.graphics.moveTo(pt.x, -pt.y);
+                else pathLine.graphics.lineTo(pt.x, -pt.y);
+
+                const circle = new createjs.Shape();
+                circle.graphics.beginFill("#ffc107").beginStroke("#333").setStrokeStyle(0.02).drawCircle(pt.x, -pt.y, 0.15);
+                waypointsContainer.addChild(circle);
+
+                const li = document.createElement('li');
+                li.innerText = `P${idx + 1}: (${pt.x.toFixed(2)}m, ${pt.y.toFixed(2)}m)`;
+                waypointsListEl.appendChild(li);
+            });
+            waypointsContainer.addChildAt(pathLine, 0);
+        }
+
+        // 6. Thực Thi Lộ Trình
+        let currentWaypointIndex = 0;
+        let isMissionRunning = false;
+
+        function sendWaypointsMission() {
+            if (waypoints.length === 0) {
+                alert("Vui lòng click chọn ít nhất 1 điểm trên bản đồ trước!");
+                return;
+            }
+            isMissionRunning = true;
+            currentWaypointIndex = 0;
+            executeNextWaypoint();
+        }
+
+        function executeNextWaypoint() {
+            if (!isMissionRunning) return;
+            if (currentWaypointIndex >= waypoints.length) {
+                alert("Đã hoàn thành toàn bộ lộ trình!");
+                isMissionRunning = false;
+                clearWaypoints();
+                return;
+            }
+
+            const target = waypoints[currentWaypointIndex];
+            missionStatus.innerText = `Đang chạy điểm P${currentWaypointIndex + 1}/${waypoints.length}`;
+            missionStatus.style.color = "#007bff";
+
+            const poseStamped = new ROSLIB.Message({
+                header: { frame_id: 'map', stamp: { sec: 0, nanosec: 0 } },
+                pose: {
+                    position: { x: target.x, y: target.y, z: 0.0 },
+                    orientation: { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }
+                }
+            });
+            goalTopic.publish(poseStamped);
+        }
+
+        setInterval(() => {
+            if (!isMissionRunning || !currentRobotPose || currentWaypointIndex >= waypoints.length) return;
+            const target = waypoints[currentWaypointIndex];
+            const dx = currentRobotPose.x - target.x;
+            const dy = currentRobotPose.y - target.y;
+            if (Math.hypot(dx, dy) < 0.65) {
+                currentWaypointIndex++;
+                executeNextWaypoint();
+            }
+        }, 400);
+
+        // 7. Đồng Bộ Cấu Hình Robot
+        const currentConfigSub = new ROSLIB.Topic({ ros: ros, name: '/farm_config/current', messageType: 'std_msgs/msg/String' });
+        const saveConfigPub = new ROSLIB.Topic({ ros: ros, name: '/farm_config/save', messageType: 'std_msgs/msg/String' });
+
+        currentConfigSub.subscribe((msg) => {
+            try {
+                const cfg = JSON.parse(msg.data);
+                if (cfg && cfg.status !== "EMPTY") {
+                    fillForm(cfg);
+                    localStorage.setItem('last_active_farm_config', JSON.stringify(cfg));
+                    statusText.innerText = "Trạng thái: Đã đồng bộ cấu hình vườn từ Robot!";
+                    statusText.style.color = "green";
+                }
+            } catch (e) {}
+        });
+
+        function getFarmConfig() {
+            const numBeds = parseInt(document.getElementById('cfg-num-beds').value);
+            if (isNaN(numBeds)) return null;
+
+            return {
+                status: "READY",
+                farmName: document.getElementById('cfg-farm-name').value,
+                numBeds: numBeds,
+                bedWidth: parseFloat(document.getElementById('cfg-bed-width').value) || 0.8,
+                aisleWidth: parseFloat(document.getElementById('cfg-aisle-width').value) || 1.4,
+                firstBedX: parseFloat(document.getElementById('cfg-first-bed-x').value) || -4.4,
+                bedStartY: parseFloat(document.getElementById('cfg-bed-start-y').value) || 0.0,
+                bedLength: parseFloat(document.getElementById('cfg-bed-length').value) || 10.0
+            };
+        }
+
+        function saveConfigToRobot() {
+            const cfg = getFarmConfig();
+            if (!cfg) {
+                alert("Vui lòng điền đầy đủ các thông số trước khi lưu!");
+                return;
+            }
+            saveConfigPub.publish(new ROSLIB.Message({ data: JSON.stringify(cfg) }));
+            localStorage.setItem('last_active_farm_config', JSON.stringify(cfg));
+            alert("Đã lưu thông số vào Robot!");
+        }
+
+        function createNewFarm() {
+            if (confirm("Bạn có chắc chắn muốn XÓA TRẮNG toàn bộ thông số và xóa bản đồ hiển thị để bắt đầu SLAM khu vực mới không?")) {
+                localStorage.removeItem('last_active_farm_config');
+                clearFormInputs();
+                clearWaypoints();
+
+                mapContainer.removeAllChildren();
+                robotMarker.visible = false;
+                if (gridClient) {
+                    gridClient.unsubscribe();
+                    gridClient = null;
+                }
+
+                saveConfigPub.publish(new ROSLIB.Message({ data: JSON.stringify({ status: "EMPTY" }) }));
+                statusText.innerText = "Trạng thái: Đã xóa trắng bản đồ & thông số. Hãy bật SLAM để quét khu vực mới!";
+                statusText.style.color = "#dc3545";
+                alert("Đã dọn sạch màn hình! Bây giờ mày có thể tắt bringup và chạy lệnh slam_mapping để quét map mới.");
+            }
+        }
+
+        function exportFarmConfig() {
+            const cfg = getFarmConfig();
+            if (!cfg) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cfg, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `${cfg.farmName}_backup.json`);
+            dlAnchor.click();
+        }
+
+        function importFarmConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const cfg = JSON.parse(e.target.result);
+                    fillForm(cfg);
+                    localStorage.setItem('last_active_farm_config', JSON.stringify(cfg));
+                    alert("Đã nạp file thành công! Nhấn 'LƯU CẤU HÌNH VÀO ROBOT' để áp dụng.");
+                } catch (err) {}
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>

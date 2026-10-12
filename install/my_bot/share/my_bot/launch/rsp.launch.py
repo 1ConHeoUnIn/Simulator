@@ -1,1 +1,0 @@
-/home/heo/robot_ws/build/my_bot/launch/rsp.launch.py

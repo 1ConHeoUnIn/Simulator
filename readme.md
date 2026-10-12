@@ -62,3 +62,38 @@ Mở trình duyệt, mở file:
         "
         /home/heo/robot_ws/src/hmmm/index.html
         "
+
+
+Quản lí workspace:
+Lần đầu 
+                "
+
+                cd ~/robot_ws
+                rm -rf build/ install/ log/
+
+                cd ~/robot_ws
+
+                # Cài tree nếu máy chưa có
+                sudo apt update && sudo apt install tree -y
+
+                # 1. Tạo file tổng hợp và in cây thư mục src
+                echo "=== CẤU TRÚC THƯ MỤC SRC ===" > workspace_summary.txt
+                tree src/ >> workspace_summary.txt
+
+                # 2. Tự động đọc và gom nội dung tất cả các file mã nguồn vào file tổng hợp
+                echo -e "\n=== TOÀN BỘ NỘI DUNG CODE ===" >> workspace_summary.txt
+                for f in $(find src/ -type f \( -name "*.py" -o -name "*.xacro" -o -name "*.yaml" -o -name "*.html" -o -name "*.world" \)); do
+                echo -e "\n--------------------------------------------------" >> workspace_summary.txt
+                echo "FILE: $f" >> workspace_summary.txt
+                echo "--------------------------------------------------" >> workspace_summary.txt
+                cat "$f" >> workspace_summary.txt
+                done
+
+                echo " Đã tạo xong file: ~/robot_ws/workspace_summary.txt"
+                "
+
+Các lần sau:
+
+                "
+                cd ~/robot_ws && rm -rf build/ install/ log/ && { echo "=== CẤU TRÚC THƯ MỤC SRC ==="; tree src/; echo -e "\n=== TOÀN BỘ NỘI DUNG CODE ==="; for f in $(find src/ -type f \( -name "*.py" -o -name "*.xacro" -o -name "*.yaml" -o -name "*.html" -o -name "*.world" \)); do echo -e "\n--------------------------------------------------\nFILE: $f\n--------------------------------------------------"; cat "$f"; done; } > workspace_summary.txt && echo " Đã dọn sạch build và cập nhật xong workspace_summary.txt!"
+                "
